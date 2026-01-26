@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { formatDateShort } from '~/utils/formatters'
 import { useUnifiedAuth } from '~/composables/useUnifiedAuth'
+import { useRealtimeUpdates } from '~/composables/useRealtimeUpdates'
+import { useDebounce } from '~/composables/useDebounce'
 
 definePageMeta({
   layout: 'default'
@@ -114,6 +116,58 @@ const handleSort = (newSortBy: string | null, newSortOrder: 'asc' | 'desc' | nul
 // Watch for filter changes (including debounced search query and sorting)
 watch([filterDecision, filterProvider, filterModel, dateRange, currentPage, itemsPerPage, debouncedSearchQuery, sortBy, sortOrder], () => {
   fetchLogs()
+})
+
+// Real-time updates via SSE
+const { isConnected, error: sseError } = useRealtimeUpdates({
+  onAuditLogCreated: (event) => {
+    console.log('[LOGS] Audit log created event received:', event)
+    // Check if new log matches current filters
+    const dateRangeParams = getDateRange()
+    const eventDate = event.data.timestamp ? new Date(event.data.timestamp) : new Date()
+    
+    // Check date range filter
+    let matchesDateRange = true
+    if (dateRangeParams.startDate) {
+      matchesDateRange = eventDate >= new Date(dateRangeParams.startDate)
+    }
+    if (dateRangeParams.endDate && matchesDateRange) {
+      matchesDateRange = eventDate <= new Date(dateRangeParams.endDate)
+    }
+    
+    // Check decision filter
+    const matchesDecision = !filterDecision.value || event.data.decision === filterDecision.value
+    
+    // Check provider filter
+    const matchesProvider = !filterProvider.value || event.data.provider === filterProvider.value
+    
+    // Check model filter
+    const matchesModel = !filterModel.value || event.data.model === filterModel.value
+    
+    console.log('[LOGS] Filter match check:', { matchesDateRange, matchesDecision, matchesProvider, matchesModel, currentPage: currentPage.value })
+    
+    // If matches all filters and we're on first page, refetch
+    if (matchesDateRange && matchesDecision && matchesProvider && matchesModel) {
+      // Only refetch if we're on the first page (new entries appear at top)
+      if (currentPage.value === 1) {
+        console.log('[LOGS] Refetching logs due to new audit log')
+        fetchLogs()
+      }
+    }
+  },
+  onBatchUpdate: (event) => {
+    console.log('[LOGS] Batch update event received:', event)
+    // For batch updates, always refetch if on first page
+    if (currentPage.value === 1) {
+      console.log('[LOGS] Refetching logs due to batch update')
+      fetchLogs()
+    }
+  }
+})
+
+// Debug: Log SSE connection status
+watch([isConnected, sseError], ([connected, err]) => {
+  console.log('[LOGS] SSE connection status:', { connected, error: err })
 })
 
 // Fetch cost data for each log entry

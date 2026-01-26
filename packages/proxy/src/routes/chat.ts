@@ -14,6 +14,7 @@ import { costEstimatorService } from '../services/cost-estimator-service.js'
 import { spendResetService } from '../services/spend-reset-service.js'
 import { rateLimiterService } from '../services/rate-limiter-service.js'
 import { queueManagerService } from '../services/queue-manager-service.js'
+import { eventEmitterService } from '../services/event-emitter-service.js'
 
 const router: Router = Router()
 
@@ -456,6 +457,16 @@ router.post('/completions', async (req: Request, res: Response) => {
       authEndTime: new Date(authEndTime).toISOString(),
       authDurationMs,
     })
+
+    // Emit audit log created event (for real-time updates)
+    eventEmitterService.emitEvent('audit_log_created', {
+      auditLogId,
+      requestId,
+      timestamp: new Date().toISOString(),
+      decision: authResult.decision === 'Allow' ? 'permit' : 'forbid',
+      provider,
+      model
+    })
     
     // 8. If denied, return 403
     if (authResult.decision !== 'Allow') {
@@ -513,6 +524,15 @@ router.post('/completions', async (req: Request, res: Response) => {
       responseTimestamp: new Date(llmResponseTime).toISOString(),
       latencyMs: llmResponseTime - llmRequestStartTime,
       status: 'completed',
+    })
+
+    // Emit cost tracked event (for real-time updates)
+    eventEmitterService.emitEvent('cost_tracked', {
+      costTrackingId,
+      requestId,
+      timestamp: new Date().toISOString(),
+      provider,
+      model: llmResponse.model || model
     })
     
     // 12. Update audit log with provider response info

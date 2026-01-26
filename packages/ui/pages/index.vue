@@ -6,6 +6,7 @@ import { useConfigStore } from '~/stores/config'
 import { useKeys } from '~/composables/useKeys'
 import { useRules } from '~/composables/useRules'
 import { useUnifiedAuth } from '~/composables/useUnifiedAuth'
+import { useRealtimeUpdates } from '~/composables/useRealtimeUpdates'
 
 definePageMeta({
   layout: 'default'
@@ -142,6 +143,27 @@ onMounted(async () => {
     }
   } else {
     isLoading.value = false
+  }
+})
+
+// Real-time updates via SSE
+useRealtimeUpdates({
+  onAuditLogCreated: () => {
+    // Refetch overview stats and recent activity
+    fetchOverviewStats()
+    fetchRecentActivity()
+    fetchCostStats()
+  },
+  onCostTracked: () => {
+    // Refetch overview stats and cost stats
+    fetchOverviewStats()
+    fetchCostStats()
+  },
+  onBatchUpdate: () => {
+    // For batch updates, refetch everything
+    fetchOverviewStats()
+    fetchRecentActivity()
+    fetchCostStats()
   }
 })
 

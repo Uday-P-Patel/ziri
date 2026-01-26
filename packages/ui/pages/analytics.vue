@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { formatCurrency, formatDateShort } from '~/utils/formatters'
 import { useUnifiedAuth } from '~/composables/useUnifiedAuth'
+import { useRealtimeUpdates } from '~/composables/useRealtimeUpdates'
 import KeysSpendChart from '~/components/keys/SpendChart.vue'
 
 definePageMeta({
@@ -174,6 +175,25 @@ const fetchAllData = async () => {
 // Watch time range changes
 watch(timeRange, () => {
   fetchAllData()
+})
+
+// Real-time updates via SSE
+useRealtimeUpdates({
+  onAuditLogCreated: () => {
+    // Refetch overview stats when new audit log is created
+    fetchOverviewStats()
+  },
+  onCostTracked: () => {
+    // Refetch all cost-related data when cost is tracked
+    fetchCostByProvider()
+    fetchCostByModel()
+    fetchDailyCost()
+    fetchOverviewStats()
+  },
+  onBatchUpdate: () => {
+    // For batch updates, refetch everything
+    fetchAllData()
+  }
 })
 
 // Calculate stats

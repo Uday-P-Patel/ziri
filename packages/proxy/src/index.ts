@@ -75,6 +75,9 @@ startServer().catch((error) => {
 process.on('SIGINT', async () => {
   console.log('\n[PROXY] Shutting down...')
   await stopServer()
+  // Cleanup event emitter
+  const { eventEmitterService } = await import('./services/event-emitter-service.js')
+  eventEmitterService.destroy()
   closeDatabase()
   process.exit(0)
 })
@@ -82,6 +85,9 @@ process.on('SIGINT', async () => {
 process.on('SIGTERM', async () => {
   console.log('\n[PROXY] Shutting down...')
   await stopServer()
+  // Cleanup event emitter
+  const { eventEmitterService } = await import('./services/event-emitter-service.js')
+  eventEmitterService.destroy()
   closeDatabase()
   process.exit(0)
 })
