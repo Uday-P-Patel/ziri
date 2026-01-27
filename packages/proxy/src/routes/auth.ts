@@ -42,7 +42,7 @@ router.post('/admin/login', async (req: Request, res: Response) => {
  
     if (user && user.id === 'admin') {
  
-      if (user.status !== 1) { // 1 = active
+      if (user.status !== 1) {
         res.status(403).json({
           error: 'Admin account is not active',
           code: 'ACCOUNT_INACTIVE'
@@ -65,7 +65,7 @@ router.post('/admin/login', async (req: Request, res: Response) => {
       try {
         decryptedEmail = decrypt(user.email)
       } catch (error: any) {
-        decryptedEmail = user.email // Fallback to plain text
+        decryptedEmail = user.email
       }
       
  
@@ -81,9 +81,9 @@ router.post('/admin/login', async (req: Request, res: Response) => {
       
  
       const tokenHash = hashRefreshToken(refreshToken)
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days (sliding window)
-      const absoluteExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days (absolute)
-      const deviceId = req.body.deviceId || null // Optional device ID
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      const absoluteExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      const deviceId = req.body.deviceId || null
       
       db.prepare(`
         INSERT INTO refresh_tokens (auth_id, token_hash, expires_at, absolute_expires_at, device_id)
@@ -96,7 +96,7 @@ router.post('/admin/login', async (req: Request, res: Response) => {
       res.json({
         accessToken,
         refreshToken,
-        expiresIn: 3600, // 1 hour in seconds
+        expiresIn: 3600,
         tokenType: 'Bearer',
         user: {
           userId: user.id,
@@ -126,9 +126,9 @@ router.post('/admin/login', async (req: Request, res: Response) => {
         
  
         const tokenHash = hashRefreshToken(refreshToken)
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days (sliding window)
-        const absoluteExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days (absolute)
-        const deviceId = req.body.deviceId || null // Optional device ID
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        const absoluteExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        const deviceId = req.body.deviceId || null
         
         db.prepare(`
           INSERT INTO refresh_tokens (auth_id, token_hash, expires_at, absolute_expires_at, device_id)
@@ -138,7 +138,7 @@ router.post('/admin/login', async (req: Request, res: Response) => {
         res.json({
           accessToken,
           refreshToken,
-          expiresIn: 3600, // 1 hour in seconds
+          expiresIn: 3600,
           tokenType: 'Bearer',
           user: {
             userId: 'admin',
@@ -216,14 +216,14 @@ router.post('/login', async (req: Request, res: Response) => {
     try {
       decryptedEmail = decrypt(user.email)
     } catch (error: any) {
-      decryptedEmail = user.email // Fallback to plain text
+      decryptedEmail = user.email
     }
     
  
     const tokenPayload: TokenPayload = {
       userId: user.id,
       email: decryptedEmail,
-      role: 'user', // Regular users have role 'user'
+      role: 'user',
       name: user.name || ''
     }
     
@@ -232,9 +232,9 @@ router.post('/login', async (req: Request, res: Response) => {
     
  
     const tokenHash = hashRefreshToken(refreshToken)
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days (sliding window)
-    const absoluteExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days (absolute)
-    const deviceId = req.body.deviceId || null // Optional device ID
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    const absoluteExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    const deviceId = req.body.deviceId || null
     
     db.prepare(`
       INSERT INTO refresh_tokens (auth_id, token_hash, expires_at, absolute_expires_at, device_id)
@@ -247,7 +247,7 @@ router.post('/login', async (req: Request, res: Response) => {
     res.json({
       accessToken,
       refreshToken,
-      expiresIn: 3600, // 1 hour in seconds
+      expiresIn: 3600,
       tokenType: 'Bearer',
       user: {
         userId: user.id,
@@ -332,7 +332,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
  
     const user = db.prepare('SELECT * FROM auth WHERE id = ?').get(payload.userId) as any
     
-    if (!user || user.status !== 1) { // 1 = active
+    if (!user || user.status !== 1) {
       res.status(403).json({
         error: 'User account is not active',
         code: 'USER_INACTIVE'
@@ -345,7 +345,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
     try {
       decryptedEmail = decrypt(user.email)
     } catch (error: any) {
-      decryptedEmail = user.email // Fallback to plain text
+      decryptedEmail = user.email
     }
     
  
@@ -368,7 +368,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
     
  
     const newTokenHash = hashRefreshToken(newRefreshToken)
-    const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days (sliding window)
+    const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
  
     const newAbsoluteExpiresAt = storedToken.absolute_expires_at 
       ? new Date(storedToken.absolute_expires_at) 
@@ -382,7 +382,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
       newTokenHash, 
       newExpiresAt.toISOString(), 
       newAbsoluteExpiresAt.toISOString(),
-      storedToken.device_id // Preserve device_id
+      storedToken.device_id
     )
     
     res.json({

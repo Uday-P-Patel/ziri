@@ -36,7 +36,7 @@ export const useAdminAuthStore = defineStore('adminAuth', {
     refreshToken: null as string | null,
     tokenExpiry: null as Date | null,
     user: null as AdminUser | null,
-    serverSessionId: null as string | null, // Server session ID for restart detection
+    serverSessionId: null as string | null,
     isLoading: false,
     error: null as string | null
   }),

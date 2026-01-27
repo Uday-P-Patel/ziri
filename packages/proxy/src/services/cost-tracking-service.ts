@@ -23,6 +23,10 @@ interface CostTrackingEntry {
   status?: string
   errorCode?: string
   errorMessage?: string
+  action?: 'completion' | 'embedding' | 'image_generation'
+  numImages?: number
+  imageQuality?: string
+  imageSize?: string
 }
 
 export class CostTrackingService {
@@ -60,8 +64,9 @@ export class CostTrackingService {
         input_cost, output_cost, cache_savings, total_cost,
         pricing_id, pricing_source, input_rate_used, output_rate_used,
         request_timestamp, response_timestamp, latency_ms,
-        status, error_code, error_message
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        status, error_code, error_message,
+        action, num_images, image_quality, image_size
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
 
     const result = stmt.run(
@@ -89,7 +94,11 @@ export class CostTrackingService {
       entry.latencyMs || null,
       entry.status || 'completed',
       entry.errorCode || null,
-      entry.errorMessage || null
+      entry.errorMessage || null,
+      entry.action || 'completion',
+      entry.numImages || null,
+      entry.imageQuality || null,
+      entry.imageSize || null
     )
 
  
@@ -106,6 +115,86 @@ export class CostTrackingService {
       
       if (userKeyId) {
         await this.spendUpdateService.addSpend(userKeyId, costCalc.totalCost)
+      }
+    }
+
+    return result.lastInsertRowid as number
+  }
+
+  async trackImageCost(entry: {
+    requestId: string
+    executionKey: string
+    auditLogId?: number
+    provider: string
+    providerRequestId?: string
+    modelRequested: string
+    modelUsed?: string
+    totalCost: number
+    numImages: number
+    imageQuality: string
+    imageSize: string
+    requestTimestamp: string
+    responseTimestamp?: string
+    latencyMs?: number
+    status?: string
+    errorCode?: string
+    errorMessage?: string
+  }): Promise<number> {
+    const stmt = this.db.prepare(`
+      INSERT INTO cost_tracking (
+        request_id, execution_key, audit_log_id,
+        provider, provider_request_id,
+        model_requested, model_used,
+        input_tokens, output_tokens, total_tokens, cached_tokens,
+        input_cost, output_cost, cache_savings, total_cost,
+        pricing_id, pricing_source, input_rate_used, output_rate_used,
+        request_timestamp, response_timestamp, latency_ms,
+        status, error_code, error_message,
+        action, num_images, image_quality, image_size
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+
+    const result = stmt.run(
+      entry.requestId,
+      entry.executionKey,
+      entry.auditLogId || null,
+      entry.provider,
+      entry.providerRequestId || null,
+      entry.modelRequested,
+      entry.modelUsed || null,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      entry.totalCost,
+      null,
+      'image_pricing',
+      0,
+      0,
+      entry.requestTimestamp,
+      entry.responseTimestamp || null,
+      entry.latencyMs || null,
+      entry.status || 'completed',
+      entry.errorCode || null,
+      entry.errorMessage || null,
+      'image_generation',
+      entry.numImages,
+      entry.imageQuality,
+      entry.imageSize
+    )
+
+    const keyRecord = this.db.prepare(
+      'SELECT auth_id FROM user_agent_keys WHERE id = ?'
+    ).get(entry.executionKey) as { auth_id: string } | undefined
+
+    if (keyRecord) {
+      const { getUserKeyIdForUser } = await import('./key-service.js')
+      const userKeyId = await getUserKeyIdForUser(keyRecord.auth_id)
+      if (userKeyId) {
+        await this.spendUpdateService.addSpend(userKeyId, entry.totalCost)
       }
     }
 

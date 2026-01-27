@@ -42,8 +42,8 @@ console.log(response.choices[0].message.content)
 
 ```typescript
 interface UserSDKConfig {
-  apiKey: string           // Your API key (starts with 'sk-zs-')
-  proxyUrl?: string        // Proxy server URL (optional)
+  apiKey: string
+  proxyUrl?: string
 }
 ```
 

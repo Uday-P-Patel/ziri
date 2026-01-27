@@ -4,9 +4,9 @@ import jwt from 'jsonwebtoken'
 import { getMasterKey } from './master-key.js'
 import { createHash } from 'crypto'
 
-const JWT_SECRET_KEY = 'jwt-secret' // Separate from master key, can be configurable later
-const ACCESS_TOKEN_EXPIRY = '1h' // 1 hour
-const REFRESH_TOKEN_EXPIRY = '7d' // 7 days
+const JWT_SECRET_KEY = 'jwt-secret'
+const ACCESS_TOKEN_EXPIRY = '1h'
+const REFRESH_TOKEN_EXPIRY = '7d'
 
 export interface TokenPayload {
   userId: string

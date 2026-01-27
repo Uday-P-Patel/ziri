@@ -15,7 +15,7 @@ export interface ProviderMetadata {
 }
 
 export interface Provider {
-  id: string // provider_keys.id (TEXT)
+  id: string
   name: string
   displayName: string
   baseUrl: string
@@ -117,12 +117,12 @@ export function listProviders(params?: {
   }
   
  
-  let orderByClause = 'ORDER BY created_at DESC' // Default sort
+  let orderByClause = 'ORDER BY created_at DESC'
   if (params?.sortBy && params?.sortOrder) {
  
     const columnMap: Record<string, string> = {
       'name': 'provider',
-      'displayName': 'provider', // Will sort by provider name (displayName is in metadata)
+      'displayName': 'provider',
       'createdAt': 'created_at',
       'updatedAt': 'updated_at'
     }

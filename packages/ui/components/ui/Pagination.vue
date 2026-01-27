@@ -1,7 +1,7 @@
 <script setup lang="ts">
 interface Props {
   currentPage: number
-  totalItems?: number // Optional to handle loading states
+  totalItems?: number
   itemsPerPage: number
   showItemsPerPage?: boolean
 }
@@ -61,7 +61,7 @@ const itemsPerPageOptions = computed(() => {
             } else {
               emit('update:itemsPerPage', Number(value))
             }
-            emit('update:currentPage', 1) // Reset to first page when changing items per page
+            emit('update:currentPage', 1)
           }"
           class="input w-20 text-sm py-1"
         >

@@ -25,7 +25,7 @@ export class CostEstimatorService {
     'default': 1.0,
   }
 
-  private readonly SAFETY_BUFFER = 1.3 // 30% buffer
+  private readonly SAFETY_BUFFER = 1.3
 
   async estimateCost(
     provider: string,

@@ -5,8 +5,8 @@ import type { ProxyConfig } from '../config.js'
 
 interface CachedToken {
   token: string
-  expiresAt: Date // Token expiry from Backend API
-  cachedAt: Date // When we cached it
+  expiresAt: Date
+  cachedAt: Date
 }
 
  
@@ -61,7 +61,7 @@ export async function getM2MToken(config: ProxyConfig): Promise<string> {
  
  
  
-  const expiresIn = 3600 // 1 hour in seconds
+  const expiresIn = 3600
   const expiresAt = new Date(Date.now() + (expiresIn - PROACTIVE_REFRESH_MINUTES * 60) * 1000)
   
  

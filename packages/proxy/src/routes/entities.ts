@@ -98,7 +98,7 @@ router.put('/', requireAdmin, async (req: Request, res: Response) => {
     }
     
     const entityStore = serviceFactory.getEntityStore()
-    const entityStatus = status !== undefined ? status : 1 // Default to active
+    const entityStatus = status !== undefined ? status : 1
     
     await entityStore.updateEntity(entity, entityStatus)
     

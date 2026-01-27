@@ -77,7 +77,7 @@ const fetchCostData = async () => {
     monthlyStartDate.setMonth(monthlyStartDate.getMonth() - 12)
     const monthlyParams = new URLSearchParams({
       executionKey: key.value.executionKey,
-      groupBy: 'day', // Group by day, then aggregate by month
+      groupBy: 'day',
       startDate: monthlyStartDate.toISOString(),
       endDate: new Date().toISOString()
     })

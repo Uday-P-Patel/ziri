@@ -7,7 +7,7 @@ interface Column {
   key: string
   header: string
   class?: string
-  sortable?: boolean // Whether this column can be sorted
+  sortable?: boolean
 }
 
 interface Props {
@@ -19,9 +19,9 @@ interface Props {
   paginated?: boolean
   itemsPerPage?: number
   currentPage?: number
-  totalItems?: number // For server-side pagination (total count from API)
-  sortBy?: string | null // Current sort column
-  sortOrder?: SortOrder // Current sort order
+  totalItems?: number
+  sortBy?: string | null
+  sortOrder?: SortOrder
 }
 
 const props = withDefaults(defineProps<Props>(), {

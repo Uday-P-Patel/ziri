@@ -6,16 +6,16 @@ import { useAdminAuth } from './useAdminAuth'
 import { useToast } from './useToast'
 
 export interface User {
-  id: string // auth.id (TEXT)
-  userId: string // Same as id (for backward compatibility)
-  email: string // Decrypted
-  name: string // Plain text
-  department?: string // Plain text
+  id: string
+  userId: string
+  email: string
+  name: string
+  department?: string
   isAgent: boolean
-  status: number // 0=inactive, 1=active, 2=revoked
+  status: number
   createdAt: string
   updatedAt: string
-  lastSignIn?: string // Renamed from lastLogin
+  lastSignIn?: string
 }
 
 export interface CreateUserInput {
@@ -23,7 +23,7 @@ export interface CreateUserInput {
   name: string
   department: string
   isAgent: boolean
-  limitRequestsPerMinute?: number // Default: 100
+  limitRequestsPerMinute?: number
 }
 
 const users = ref<User[]>([])
@@ -107,7 +107,7 @@ export function useUsers() {
  
     return {
       user: result.user,
-      password: result.password // Only present if email was not sent
+      password: result.password
     }
   }
 
@@ -185,7 +185,7 @@ export function useUsers() {
     const result = await response.json()
  
     return {
-      password: result.password, // Only present if email was not sent
+      password: result.password,
       emailSent: result.emailSent || false
     }
   }

@@ -4,16 +4,16 @@ import { readConfig, type ZsAiConfig } from './config/index.js'
 import { getMasterKey, initializeMasterKey } from './utils/master-key.js'
 
 export interface ProxyConfig {
-  mode: 'local' | 'live'  // Storage and authorization mode
+  mode: 'local' | 'live'
   port: number
-  host: string  // Server host binding
-  publicUrl?: string  // Public URL for sharing
-  backendUrl?: string  // For live mode only
-  pdpUrl?: string  // For live mode only
-  projectId?: string  // For live mode only
-  orgId?: string  // For live mode only
-  clientId?: string  // For live mode only
-  clientSecret?: string  // For live mode only
+  host: string
+  publicUrl?: string
+  backendUrl?: string
+  pdpUrl?: string
+  projectId?: string
+  orgId?: string
+  clientId?: string
+  clientSecret?: string
   masterKey: string
   logLevel: 'debug' | 'info' | 'warn' | 'error'
   email?: {

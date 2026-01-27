@@ -66,6 +66,22 @@ async function initializeSchema(database: Database.Database): Promise<void> {
     }
   }
   
+  try {
+    const { up: migrationUp } = await import('./migrations/005_model_actions_and_image_pricing.js')
+    migrationUp(database)
+    console.log('[DB] ✅ Migration 005 applied: model_actions_and_image_pricing')
+  } catch (error: any) {
+    if (error.message?.includes('duplicate column name') || error.message?.includes('already exists')) {
+      console.log('[DB] Migration 005: schema already updated, skipping')
+    } else if (error.message?.includes('Cannot find module')) {
+      console.error('[DB] Migration 005: module not found - this is required!')
+      throw error
+    } else {
+      console.error('[DB] Migration 005 failed:', error.message)
+      throw error
+    }
+  }
+  
   const schemasToApply = ALL_SCHEMAS.filter(schema => !schema.includes('CREATE TABLE IF NOT EXISTS audit_logs'))
   
   for (const schema of schemasToApply) {

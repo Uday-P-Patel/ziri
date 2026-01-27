@@ -49,7 +49,7 @@ export function useSchema() {
             schemaStore.version = data.data.version
             schemaStore.lastSyncedAt = new Date()
             return {
-                schema: data.data.schema, // Cedar text if format=cedar, JSON otherwise
+                schema: data.data.schema,
                 schemaJson: data.data.schemaJson || (typeof data.data.schema === 'object' ? data.data.schema : null),
                 schemaCedarText: typeof data.data.schema === 'string' ? data.data.schema : null,
                 version: data.data.version,
@@ -119,7 +119,7 @@ export function useSchema() {
             
             toast.success('Schema updated successfully')
             return {
-                schema: data.data.schema, // Cedar text if format=cedar, JSON otherwise
+                schema: data.data.schema,
                 schemaJson: data.data.schemaJson || (typeof data.data.schema === 'object' ? data.data.schema : null),
                 schemaCedarText: typeof data.data.schema === 'string' ? data.data.schema : null,
                 version: data.data.version,

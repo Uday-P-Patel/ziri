@@ -21,8 +21,8 @@ export interface EventData {
 export class EventEmitterService extends EventEmitter {
   private eventBuffer: EventData[] = []
   private batchInterval: NodeJS.Timeout | null = null
-  private readonly BATCH_INTERVAL_MS = 2000 // 2 seconds
-  private readonly MAX_BUFFER_SIZE = 1000 // Prevent memory issues
+  private readonly BATCH_INTERVAL_MS = 2000
+  private readonly MAX_BUFFER_SIZE = 1000
 
   constructor() {
     super()
@@ -106,7 +106,7 @@ export class EventEmitterService extends EventEmitter {
   }
 
   destroy(): void {
-    this.flushBuffer() // Send any remaining events
+    this.flushBuffer()
     this.stopBatching()
     this.removeAllListeners()
   }

@@ -28,14 +28,14 @@ export const useKeysStore = defineStore('keys', {
                 email: attrs.email as string,
                 role: attrs.role as 'engineer' | 'senior_engineer' | 'manager',
                 department: attrs.department as string,
-                apiKey: 'hidden', // API key not returned in list
+                apiKey: 'hidden',
                 currentDailySpend: parseDecimal(attrs.current_daily_spend),
                 dailySpendLimit: parseDecimal(attrs.daily_spend_limit),
                 currentMonthlySpend: parseDecimal(attrs.current_monthly_spend),
                 monthlySpendLimit: parseDecimal(attrs.monthly_spend_limit),
                 status: attrs.status as 'active' | 'revoked',
                 createdAt: attrs.created_at as string,
-                lastUsedAt: attrs.last_daily_reset as string // Using reset time as proxy for now
+                lastUsedAt: attrs.last_daily_reset as string
             }
         },
 

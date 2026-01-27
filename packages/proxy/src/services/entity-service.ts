@@ -69,15 +69,15 @@ export async function createEntityInBackend(input: CreateEntityInput): Promise<v
     uid: { type: 'User', id: input.userId },
     attrs: {
       user_id: input.userId,
-      name: user.name, // From user
-      email: user.email, // From user
-      role: input.role || '', // From key creation input
-      department: input.department || '', // From key creation input
+      name: user.name,
+      email: user.email,
+      role: input.role || '',
+      department: input.department || '',
       security_clearance: input.securityClearance || 2,
       training_completed: input.trainingCompleted ?? false,
-      years_of_service: toDecimalOne(input.yearsOfService || 0), // 1 decimal place
-      daily_spend_limit: toDecimalFour(input.dailySpendLimit || 50), // 4 decimal places
-      monthly_spend_limit: toDecimalFour(input.monthlySpendLimit || 500), // 4 decimal places
+      years_of_service: toDecimalOne(input.yearsOfService || 0),
+      daily_spend_limit: toDecimalFour(input.dailySpendLimit || 50),
+      monthly_spend_limit: toDecimalFour(input.monthlySpendLimit || 500),
       current_daily_spend: toDecimalFour(0),
       current_monthly_spend: toDecimalFour(0),
       last_daily_reset: new Date().toISOString(),

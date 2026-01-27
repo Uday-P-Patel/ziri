@@ -111,7 +111,7 @@ export class AuditLogService {
     decision?: 'permit' | 'forbid'
     startDate?: string
     endDate?: string
-    search?: string // Generic search across multiple fields
+    search?: string
     limit?: number
     offset?: number
     sortBy?: string | null
@@ -159,7 +159,7 @@ export class AuditLogService {
     const total = countResult.total
 
  
-    let orderByClause = 'ORDER BY request_timestamp DESC' // Default sort
+    let orderByClause = 'ORDER BY request_timestamp DESC'
     if (params?.sortBy && params?.sortOrder) {
  
  

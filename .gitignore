@@ -8,6 +8,7 @@ coverage/
 test-*.js
 *.test.js
 *.spec.js
+test-*.mjs
 
 # Production
 dist/

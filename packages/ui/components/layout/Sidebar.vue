@@ -54,7 +54,7 @@ const showTooltip = (event: MouseEvent, text: string) => {
   tooltipState.value = {
     visible: true,
     text,
-    x: rect.right + 6,  // Start position accounts for arrow width
+    x: rect.right + 6,
     y: rect.top + rect.height / 2
   }
 }
@@ -166,7 +166,7 @@ const getIcon = (iconName: string) => {
     :class="[
       isCollapsed ? 'w-16' : 'w-56',
       'bg-[rgb(var(--surface))] border-[rgb(var(--border))]',
-      'hidden md:flex' // Hide on mobile, always visible on desktop
+      'hidden md:flex'
     ]"
   >
     <!-- Logo Section -->

@@ -1,13 +1,13 @@
 export interface GatewayConfig {
  
-    mode?: 'local' | 'live'  // Default: 'local'
+    mode?: 'local' | 'live'
     
  
     server?: {
-        host?: string  // Default: '127.0.0.1'
-        port?: number  // Default: 3100
+        host?: string
+        port?: number
     }
-    publicUrl?: string  // Public URL for sharing (ngrok, Tailscale, etc.)
+    publicUrl?: string
     
  
     email?: {
@@ -34,10 +34,10 @@ export interface GatewayConfig {
     clientId?: string
     clientSecret?: string
     pdpUrl?: string
-    proxyUrl?: string  // Deprecated: use server.port instead
-    port?: number  // Deprecated: use server.port instead
+    proxyUrl?: string
+    port?: number
     logLevel?: 'debug' | 'info' | 'warn' | 'error'
-    masterKey?: string  // Read-only: Display only, not editable
+    masterKey?: string
 }
 
 export const defaultConfig: GatewayConfig = {

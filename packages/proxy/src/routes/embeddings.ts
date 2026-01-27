@@ -8,49 +8,25 @@ import { auditLogService } from '../services/audit-log-service.js'
 import { costTrackingService } from '../services/cost-tracking-service.js'
 import { costEstimatorService } from '../services/cost-estimator-service.js'
 import { spendResetService } from '../services/spend-reset-service.js'
-import { spendReservationService } from '../services/spend-reservation-service.js'
 import { rateLimiterService } from '../services/rate-limiter-service.js'
 import { queueManagerService } from '../services/queue-manager-service.js'
 import { eventEmitterService } from '../services/event-emitter-service.js'
+import { spendReservationService } from '../services/spend-reservation-service.js'
+import { modelCapabilityService } from '../services/model-capability-service.js'
 
 const router: Router = Router()
 
-function extractUsage(response: any, provider: string): {
-  inputTokens: number
-  outputTokens: number
-  totalTokens: number
-  cachedTokens: number
-} {
-  if (provider === 'openai') {
-    return {
-      inputTokens: response.usage?.prompt_tokens || 0,
-      outputTokens: response.usage?.completion_tokens || 0,
-      totalTokens: response.usage?.total_tokens || 0,
-      cachedTokens: response.usage?.prompt_tokens_details?.cached_tokens || 0,
-    }
-  } else if (provider === 'anthropic') {
-    return {
-      inputTokens: response.usage?.input_tokens || 0,
-      outputTokens: response.usage?.output_tokens || 0,
-      totalTokens: (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0),
-      cachedTokens: response.usage?.cache_read_input_tokens || 0,
-    }
-  }
-  return { inputTokens: 0, outputTokens: 0, totalTokens: 0, cachedTokens: 0 }
-}
-
-router.post('/completions', async (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
   const requestStartTime = Date.now()
   let requestId: string | null = null
   let auditLogId: number | null = null
   let userKeyId: string | null = null
   let slotAcquired = false
-  
+
   try {
     requestId = auditLogService.generateRequestId()
-    
+
     const apiKey = req.headers['x-api-key'] as string
-    
     if (!apiKey) {
       res.status(400).json({
         error: 'API key required. Include X-API-Key header.',
@@ -59,7 +35,7 @@ router.post('/completions', async (req: Request, res: Response) => {
       })
       return
     }
-    
+
     if (!validateApiKeyFormat(apiKey)) {
       res.status(401).json({
         error: 'Invalid API key format',
@@ -68,7 +44,7 @@ router.post('/completions', async (req: Request, res: Response) => {
       })
       return
     }
-    
+
     const userId = extractUserIdFromApiKey(apiKey)
     if (!userId) {
       res.status(401).json({
@@ -78,10 +54,10 @@ router.post('/completions', async (req: Request, res: Response) => {
       })
       return
     }
-    
+
     const keyHash = hashApiKey(apiKey)
     const db = getDatabase()
-    
+
     const dbKey = db.prepare('SELECT id, auth_id FROM user_agent_keys WHERE key_hash = ?').get(keyHash) as { id: string; auth_id: string } | undefined
     if (!dbKey || dbKey.auth_id !== userId) {
       res.status(403).json({
@@ -91,9 +67,9 @@ router.post('/completions', async (req: Request, res: Response) => {
       })
       return
     }
-    
+
     const apiKeyId = dbKey.id
-    
+
     const foundUserKeyId = await keyService.getUserKeyIdForUser(userId)
     if (!foundUserKeyId) {
       res.status(403).json({
@@ -104,15 +80,15 @@ router.post('/completions', async (req: Request, res: Response) => {
       return
     }
     userKeyId = foundUserKeyId
-    
+
     const entityStore = serviceFactory.getEntityStore()
     const allEntitiesResult = await entityStore.getEntities()
     const allEntities = allEntitiesResult.data
-    const userKeyEntity = allEntities.find(e => 
-      e.uid.type === 'UserKey' && 
+    const userKeyEntity = allEntities.find(e =>
+      e.uid.type === 'UserKey' &&
       e.uid.id === userKeyId
     )
-    
+
     if (!userKeyEntity) {
       res.status(403).json({
         error: 'UserKey entity not found',
@@ -121,23 +97,23 @@ router.post('/completions', async (req: Request, res: Response) => {
       })
       return
     }
-    
-    const { provider, model, messages, ...otherParams } = req.body
-    
-    if (!provider || !model || !messages) {
+
+    const { provider, model, input, ...otherParams } = req.body
+
+    if (!provider || !model || typeof input === 'undefined') {
       res.status(400).json({
-        error: 'provider, model, and messages are required',
+        error: 'provider, model, and input are required',
         code: 'MISSING_FIELDS',
         requestId
       })
       return
     }
-    
-    const userEntity = allEntities.find(e => 
-      e.uid.type === 'User' && 
+
+    const userEntity = allEntities.find(e =>
+      e.uid.type === 'User' &&
       e.uid.id === userId
     )
-    
+
     if (!userEntity) {
       res.status(403).json({
         error: 'User entity not found',
@@ -146,20 +122,20 @@ router.post('/completions', async (req: Request, res: Response) => {
       })
       return
     }
-    
+
     const limitRequestsPerMinute = (userEntity.attrs as any).limit_requests_per_minute ?? null
     const effectiveLimit = limitRequestsPerMinute === 0 ? null : limitRequestsPerMinute
-    
+
     const rateLimitResult = await rateLimiterService.checkRateLimit(
       'api_key',
       apiKeyId,
       { requestsPerMinute: effectiveLimit }
     )
-    
+
     res.set('X-RateLimit-Limit', String(rateLimitResult.limit))
     res.set('X-RateLimit-Remaining', String(rateLimitResult.remaining))
     res.set('X-RateLimit-Reset', String(Math.floor(rateLimitResult.resetAt.getTime() / 1000)))
-    
+
     if (!rateLimitResult.allowed) {
       res.set('Retry-After', String(rateLimitResult.retryAfterSeconds))
       res.status(429).json({
@@ -171,14 +147,28 @@ router.post('/completions', async (req: Request, res: Response) => {
       })
       return
     }
-    
+
+    const capability = modelCapabilityService.checkModelAction(provider, model, 'embedding')
+    if (!capability.supported) {
+      res.status(400).json({
+        error: capability.error?.message || 'Model does not support embeddings',
+        code: capability.error?.code || 'ACTION_NOT_SUPPORTED',
+        requestId
+      })
+      return
+    }
+
     let costEstimate
     try {
+      const messagesLike = Array.isArray(input)
+        ? input.map((text: string) => ({ role: 'user', content: text }))
+        : [{ role: 'user', content: String(input) }]
+
       costEstimate = await costEstimatorService.estimateCost(
         provider,
         model,
-        messages,
-        req.body.max_tokens
+        messagesLike,
+        undefined
       )
     } catch (error: any) {
       costEstimate = {
@@ -188,7 +178,7 @@ router.post('/completions', async (req: Request, res: Response) => {
         confidence: 'low' as const
       }
     }
-    
+
     try {
       await queueManagerService.acquireSlot(
         userKeyId,
@@ -214,36 +204,34 @@ router.post('/completions', async (req: Request, res: Response) => {
       }
       throw error
     }
-    
+
     slotAcquired = true
-    
+
     const spendResetResult = await spendResetService.checkAndResetSpend(userKeyEntity as any)
     const activeEntity = spendResetResult.updatedEntity || userKeyEntity
-    
+
     const reservation = await spendReservationService.reserveEstimatedSpend(
       activeEntity as any,
       userKeyId,
       costEstimate.estimatedCost
     )
-    
-    let costReserved = true
-    
+
     const principal = `UserKey::"${userKeyId}"`
-    const action = 'Action::"completion"'
+    const action = 'Action::"embedding"'
     const resource = `Resource::"${model}"`
-    
+
     const toIp = (ip: string) => ({
       __extn: {
         fn: 'ip',
         arg: ip
       }
     })
-    
+
     const now = new Date()
     const dayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][now.getUTCDay()]
     const hour = now.getUTCHours()
     const ipAddress = req.ip || '127.0.0.1'
-    
+
     const context = {
       day_of_week: dayOfWeek,
       hour,
@@ -253,7 +241,7 @@ router.post('/completions', async (req: Request, res: Response) => {
       model_provider: provider,
       request_time: now.toISOString()
     }
-    
+
     const authStartTime = Date.now()
     const authService = serviceFactory.getAuthorizationService()
     const authResult = await authService.authorize({
@@ -264,18 +252,18 @@ router.post('/completions', async (req: Request, res: Response) => {
     })
     const authEndTime = Date.now()
     const authDurationMs = authEndTime - authStartTime
-    
+
     const decisionReason = authResult.diagnostics?.reason?.[0] || authResult.diagnostics?.errors?.[0] || undefined
     const policiesEvaluated = authResult.diagnostics?.reason || []
     const determiningPolicies = authResult.decision === 'Allow' ? policiesEvaluated : []
-    
+
     auditLogId = await auditLogService.log({
       requestId,
       principal,
       principalType: 'UserKey',
       authId: userId,
       apiKeyId,
-      action: 'completion',
+      action: 'embedding',
       resource,
       provider,
       model,
@@ -304,7 +292,7 @@ router.post('/completions', async (req: Request, res: Response) => {
       provider,
       model
     })
-    
+
     if (authResult.decision !== 'Allow') {
       if (slotAcquired) {
         queueManagerService.releaseSlot(userKeyId, requestId)
@@ -318,14 +306,14 @@ router.post('/completions', async (req: Request, res: Response) => {
       })
       return
     }
-    
+
     const llmRequestStartTime = Date.now()
     let llmResponse: any
     try {
-      llmResponse = await llmService.chatCompletions({
+      llmResponse = await llmService.createEmbeddings({
         provider,
         model,
-        messages,
+        input,
         ...otherParams
       })
     } catch (llmError: any) {
@@ -336,9 +324,14 @@ router.post('/completions', async (req: Request, res: Response) => {
       throw llmError
     }
     const llmResponseTime = Date.now()
-    
-    const usage = extractUsage(llmResponse, provider)
-    
+
+    const usage = {
+      inputTokens: llmResponse.usage?.prompt_tokens || 0,
+      outputTokens: 0,
+      totalTokens: llmResponse.usage?.prompt_tokens || 0,
+      cachedTokens: 0,
+    }
+
     const costTrackingId = await costTrackingService.trackCost({
       requestId,
       executionKey: apiKeyId,
@@ -346,7 +339,7 @@ router.post('/completions', async (req: Request, res: Response) => {
       provider,
       providerRequestId: llmResponse.id,
       modelRequested: model,
-      modelUsed: llmResponse.model,
+      modelUsed: llmResponse.model || model,
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
       totalTokens: usage.totalTokens,
@@ -355,6 +348,7 @@ router.post('/completions', async (req: Request, res: Response) => {
       responseTimestamp: new Date(llmResponseTime).toISOString(),
       latencyMs: llmResponseTime - llmRequestStartTime,
       status: 'completed',
+      action: 'embedding',
     })
 
     eventEmitterService.emitEvent('cost_tracked', {
@@ -364,23 +358,23 @@ router.post('/completions', async (req: Request, res: Response) => {
       provider,
       model: llmResponse.model || model
     })
-    
+
     await auditLogService.updateWithProviderResponse(requestId, llmResponse.id, costTrackingId)
-    
+
     const { pricingService } = await import('../services/pricing-service.js')
     const costCalc = await pricingService.calculateCost(
       provider,
       llmResponse.model || model,
       usage.inputTokens,
-      usage.outputTokens,
-      usage.cachedTokens
+      0,
+      0
     )
-    
+
     if (slotAcquired) {
       queueManagerService.releaseSlot(userKeyId, requestId)
       slotAcquired = false
     }
-    
+
     res.json({
       ...llmResponse,
       _meta: {
@@ -389,8 +383,8 @@ router.post('/completions', async (req: Request, res: Response) => {
           estimated: costEstimate?.estimatedCost || 0,
           actual: costCalc.totalCost,
           inputTokens: usage.inputTokens,
-          outputTokens: usage.outputTokens,
-          cachedTokens: usage.cachedTokens,
+          outputTokens: 0,
+          cachedTokens: 0,
           totalCost: costCalc.totalCost,
           estimation: costEstimate ? {
             estimatedInputTokens: costEstimate.estimatedInputTokens,
@@ -406,28 +400,23 @@ router.post('/completions', async (req: Request, res: Response) => {
       },
     })
   } catch (error: any) {
-    if (requestId && slotAcquired) {
+    if (requestId && slotAcquired && userKeyId) {
       try {
-        const userKeyId = await keyService.getUserKeyIdForUser(extractUserIdFromApiKey(req.headers['x-api-key'] as string) || '')
-        if (userKeyId) {
-          queueManagerService.releaseSlot(userKeyId, requestId)
-        }
+        queueManagerService.releaseSlot(userKeyId, requestId)
       } catch {
- 
       }
     }
-    
-    console.error('[CHAT] Completion error:', error)
-    
+
+    console.error('[EMBEDDINGS] Error:', error)
+
     if (requestId && auditLogId) {
       try {
         await auditLogService.updateWithProviderResponse(requestId, '', 0)
-      } catch (e) {
- 
+      } catch {
       }
     }
-    
-    if (error.message.includes('not configured')) {
+
+    if (error.message?.includes('not configured')) {
       res.status(404).json({
         error: error.message,
         code: 'PROVIDER_NOT_FOUND',
@@ -435,8 +424,8 @@ router.post('/completions', async (req: Request, res: Response) => {
       })
       return
     }
-    
-    if (error.message.includes('API key not found')) {
+
+    if (error.message?.includes('API key not found')) {
       res.status(500).json({
         error: error.message,
         code: 'PROVIDER_KEY_MISSING',
@@ -444,17 +433,8 @@ router.post('/completions', async (req: Request, res: Response) => {
       })
       return
     }
-    
-    if (error.message.includes('PDP')) {
-      res.status(503).json({
-        error: error.message,
-        code: 'PDP_UNAVAILABLE',
-        requestId: requestId || undefined
-      })
-      return
-    }
-    
-    if (error.message.includes('LLM provider')) {
+
+    if (error.message?.includes('LLM provider')) {
       res.status(502).json({
         error: error.message,
         code: 'LLM_PROVIDER_ERROR',
@@ -462,7 +442,7 @@ router.post('/completions', async (req: Request, res: Response) => {
       })
       return
     }
-    
+
     res.status(500).json({
       error: 'Internal server error',
       code: 'INTERNAL_ERROR',
@@ -472,3 +452,4 @@ router.post('/completions', async (req: Request, res: Response) => {
 })
 
 export default router
+

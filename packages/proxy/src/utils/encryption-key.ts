@@ -81,8 +81,8 @@ export function initializeEncryptionKey(): string {
     if (!existsSync(CONFIG_DIR)) {
       mkdirSync(CONFIG_DIR, { recursive: true })
     }
-    writeFileSync(ENCRYPTION_KEY_FILE, newKey, { mode: 0o600 }) // Read/write for owner only
-    chmodSync(ENCRYPTION_KEY_FILE, 0o600) // Ensure permissions
+    writeFileSync(ENCRYPTION_KEY_FILE, newKey, { mode: 0o600 })
+    chmodSync(ENCRYPTION_KEY_FILE, 0o600)
     console.log(`[ENCRYPTION KEY] Generated and saved to secure file: ${ENCRYPTION_KEY_FILE}`)
   } catch (error: any) {
  

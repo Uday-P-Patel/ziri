@@ -68,6 +68,12 @@ export async function createServer(): Promise<Express> {
   const chatRoutes = (await import('./routes/chat.js')).default
   app.use('/api/chat', chatRoutes)
   
+  const embeddingsRoutes = (await import('./routes/embeddings.js')).default
+  app.use('/api/embeddings', embeddingsRoutes)
+  
+  const imagesRoutes = (await import('./routes/images.js')).default
+  app.use('/api/images', imagesRoutes)
+  
   const meRoutes = (await import('./routes/me.js')).default
   app.use('/api/me', meRoutes)
   

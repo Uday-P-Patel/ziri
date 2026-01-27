@@ -29,8 +29,8 @@ router.get('/', requireAdmin, async (req: Request, res: Response) => {
       
       res.json({
         data: {
-          schema: cedarText, // Cedar text string (from DB)
-          schemaJson: schema.schema, // JSON format (converted from Cedar)
+          schema: cedarText,
+          schemaJson: schema.schema,
           version: schema.version,
           format: 'cedar'
         }
@@ -41,7 +41,7 @@ router.get('/', requireAdmin, async (req: Request, res: Response) => {
       
       res.json({
         data: {
-          schema: schema.schema, // JSON format
+          schema: schema.schema,
           version: schema.version,
           format: 'json'
         }
@@ -101,8 +101,8 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
     res.json({
       success: true,
       data: {
-        schema: cedarText || updated.schema, // Cedar text if available, otherwise JSON
-        schemaJson: updated.schema, // Always include JSON format
+        schema: cedarText || updated.schema,
+        schemaJson: updated.schema,
         version: updated.version,
         format: cedarText ? 'cedar' : 'json'
       }

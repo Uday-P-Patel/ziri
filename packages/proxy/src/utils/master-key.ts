@@ -38,7 +38,7 @@ export function saveMasterKey(key: string): void {
   }
 
  
-  writeFileSync(MASTER_KEY_FILE, key, { mode: 0o600 }) // Read/write for owner only
+  writeFileSync(MASTER_KEY_FILE, key, { mode: 0o600 })
   console.log(`[MASTER KEY] Master key saved to: ${MASTER_KEY_FILE}`)
 }
 
@@ -54,7 +54,7 @@ export function initializeMasterKey(): string {
 
  
   const newKey = generateMasterKey()
-  currentMasterKey = newKey // Store in memory for getMasterKey() to access
+  currentMasterKey = newKey
   
   console.log('='.repeat(70))
   console.log('🔑 MASTER KEY GENERATED (New on each restart)')

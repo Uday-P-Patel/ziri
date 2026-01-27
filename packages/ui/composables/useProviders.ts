@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { useAdminAuth } from './useAdminAuth'
 
 export interface Provider {
-  id: string // provider_keys.id (TEXT)
+  id: string
   name: string
   displayName: string
   baseUrl: string

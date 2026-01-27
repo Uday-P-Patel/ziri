@@ -18,9 +18,9 @@ export interface AuthorizationResult {
 
  
 export interface AuthorizationRequest {
-  principal: string  // e.g., "User::\"userId\""
-  action: string    // e.g., "Action::\"completion\""
-  resource: string   // e.g., "Resource::\"gpt-4\""
+  principal: string
+  action: string
+  resource: string
   context?: Record<string, any>
 }
 
@@ -35,7 +35,7 @@ export interface IAuthorizationService {
 
  
 export interface Policy {
-  policy: string  // Cedar policy string
+  policy: string
   description: string
 }
 

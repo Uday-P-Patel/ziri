@@ -24,7 +24,7 @@ router.get('/', (req: Request, res: Response) => {
       publicUrl: config.publicUrl,
       email: config.email,
       logLevel: config.logLevel,
-      masterKey: config.masterKey  // For display in UI
+      masterKey: config.masterKey
     })
   } catch (error: any) {
     res.status(500).json({

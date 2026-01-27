@@ -47,7 +47,7 @@ export interface EntityAttrs {
     allowed_ip_ranges?: CedarIp[]
     created_at?: string
     team?: string
-    [key: string]: any // Index signature for flexibility
+    [key: string]: any
 }
 
 export interface Entity {
@@ -58,8 +58,8 @@ export interface Entity {
 
 export interface Key {
     userId: string
-    userKeyId?: string // UserKey entity ID
-    executionKey?: string // user_agent_keys.id for cost tracking
+    userKeyId?: string
+    executionKey?: string
     apiKey: string
     currentDailySpend: number
     currentMonthlySpend: number

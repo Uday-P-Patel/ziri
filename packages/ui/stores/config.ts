@@ -120,7 +120,7 @@ export const useConfigStore = defineStore('config', {
 
  
             const configToSave = {
-                mode: this.mode || 'local',  // Use stored mode or default to local
+                mode: this.mode || 'local',
                 server: this.server || {
                     host: '127.0.0.1',
                     port: this.port || 3100

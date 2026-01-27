@@ -235,10 +235,10 @@ const loadProfile = async () => {
       userId: userData.userId || '',
       email: userData.email || '',
       name: userData.name || '',
-      role: userData.role || 'user', // This is from auth, not entity
+      role: userData.role || 'user',
       status: typeof userData.status === 'number' ? (userData.status === 1 ? 'active' : userData.status === 0 ? 'inactive' : 'revoked') : (userData.status || 'active'),
       createdAt: userData.createdAt || '',
-      lastSignIn: userData.lastSignIn || userData.lastLogin || '' // Support both field names
+      lastSignIn: userData.lastSignIn || userData.lastLogin || ''
     }
 
  
@@ -262,8 +262,8 @@ const loadProfile = async () => {
           lastDailyReset: keyEntity.lastDailyReset || '',
           lastMonthlyReset: keyEntity.lastMonthlyReset || '',
           limitRequestsPerMinute: keyEntity.limitRequestsPerMinute || 0,
-          totalRequests: 0, // Not available in schema
-          totalTokens: 0 // Not available in schema
+          totalRequests: 0,
+          totalTokens: 0
         }
       }
     }

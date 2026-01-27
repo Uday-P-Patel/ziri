@@ -94,7 +94,7 @@ router.post('/', async (req: Request, res: Response) => {
     } else {
       res.status(201).json({
         user: result.user,
-        password: result.password, // Show password if email not sent
+        password: result.password,
         message: 'User created successfully. Save the password - it won\'t be shown again! Email was not sent (email service not configured or failed).'
       })
     }
@@ -184,13 +184,13 @@ router.post('/:userId/reset-password', async (req: Request, res: Response) => {
     
     if (result.emailSent) {
       res.json({
-        password: undefined, // Don't send password if email was sent
+        password: undefined,
         emailSent: true,
         message: 'Password reset successfully. The new password has been sent to the user\'s email address.'
       })
     } else {
       res.json({
-        password: result.password, // Show password if email not sent
+        password: result.password,
         emailSent: false,
         message: 'Password reset successfully. Save the password - it won\'t be shown again! Email was not sent (email service not configured or failed).'
       })

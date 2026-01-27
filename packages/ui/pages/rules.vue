@@ -5,6 +5,7 @@ import { useToast } from '~/composables/useToast'
 import { useSchema } from '~/composables/useSchema'
 import { useCedarWasm } from '~/composables/useCedarWasm'
 import { useDebounce } from '~/composables/useDebounce'
+import { useAdminAuth } from '~/composables/useAdminAuth'
 import type { Policy, CreatePolicyInput } from '~/types/cedar'
 import type { ValidationError } from '~/composables/useCedarWasm'
 
@@ -18,8 +19,21 @@ const toast = useToast()
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
+const showTemplateModal = ref(false)
 const ruleToDelete = ref<Policy | null>(null)
 const ruleToEdit = ref<Policy | null>(null)
+const isOpeningFromTemplate = ref(false)
+
+interface PolicyTemplate {
+  id: string
+  category: string
+  title: string
+  description: string
+  policy: string
+}
+
+const templates = ref<PolicyTemplate[]>([])
+const templatesLoading = ref(false)
 
  
 const searchQuery = ref('')
@@ -38,7 +52,7 @@ const sortOrder = ref<'asc' | 'desc' | null>(null)
 const newRule = reactive<CreatePolicyInput & { isActive: boolean }>({
   policy: '',
   description: '',
-  isActive: true // Default to active when creating
+  isActive: true
 })
 
  
@@ -82,14 +96,106 @@ watch([debouncedSearchQuery, filterEffect, currentPage, itemsPerPage, sortBy, so
  
 watch(showCreateModal, (isOpen) => {
   if (isOpen) {
- 
-    newRule.policy = ''
-    newRule.description = ''
-    newRule.isActive = true
-    validationErrors.value = []
-    validationWarnings.value = []
-    ruleToEdit.value = null
+    if (!isOpeningFromTemplate.value) {
+      newRule.policy = ''
+      newRule.description = ''
+      newRule.isActive = true
+      validationErrors.value = []
+      validationWarnings.value = []
+      ruleToEdit.value = null
+    }
+    isOpeningFromTemplate.value = false
   }
+})
+
+watch(showTemplateModal, async (isOpen) => {
+  if (isOpen) {
+    console.log('[RULES] Template modal opened, fetching templates...', { 
+      templatesCount: templates.value.length, 
+      isLoading: templatesLoading.value 
+    })
+    if (templates.value.length === 0 && !templatesLoading.value) {
+      await fetchTemplates()
+    }
+  }
+})
+
+const fetchTemplates = async () => {
+  console.log('[RULES] fetchTemplates called')
+  templatesLoading.value = true
+  try {
+    const { getAuthHeader } = useAdminAuth()
+    const authHeader = getAuthHeader()
+    
+    console.log('[RULES] Auth header:', authHeader ? 'present' : 'missing')
+    
+    if (!authHeader) {
+      console.warn('[RULES] No auth header, skipping template fetch')
+      templatesLoading.value = false
+      return
+    }
+    
+    console.log('[RULES] Fetching from /api/policies/templates')
+    const response = await fetch('/api/policies/templates', {
+      headers: {
+        'Authorization': authHeader
+      }
+    })
+    
+    console.log('[RULES] Response status:', response.status, response.ok)
+    
+    if (response.ok) {
+      const data = await response.json()
+      console.log('[RULES] Templates received:', data.templates?.length || 0)
+      templates.value = data.templates || []
+    } else {
+      const error = await response.json().catch(() => ({ error: response.statusText }))
+      console.error('[RULES] Response error:', error)
+      throw new Error(error.error || 'Failed to load templates')
+    }
+  } catch (error: any) {
+    console.error('[RULES] Failed to fetch templates:', error)
+    toast.error(error.message || 'Failed to load policy templates')
+  } finally {
+    templatesLoading.value = false
+  }
+}
+
+const useTemplate = async (template: PolicyTemplate) => {
+  showTemplateModal.value = false
+  
+  await nextTick()
+  
+  isOpeningFromTemplate.value = true
+  newRule.policy = template.policy
+  newRule.description = template.description
+  newRule.isActive = true
+  validationErrors.value = []
+  validationWarnings.value = []
+  
+  showCreateModal.value = true
+  
+  await nextTick()
+  validatePolicy(template.policy)
+}
+
+const handleOpenTemplateModal = async () => {
+  console.log('[RULES] Template button clicked')
+  showTemplateModal.value = true
+  if (templates.value.length === 0 && !templatesLoading.value) {
+    await fetchTemplates()
+  }
+}
+
+const groupedTemplates = computed(() => {
+  const grouped: Record<string, PolicyTemplate[]> = {}
+  templates.value.forEach(template => {
+    if (!grouped[template.category]) {
+      grouped[template.category] = []
+    }
+    grouped[template.category].push(template)
+  })
+  return grouped
 })
 
  
@@ -167,10 +273,10 @@ const formatPolicyText = async (policyText: string) => {
           }
         })
       }
-      return policyText // Return original if formatting fails
+      return policyText
     }
   } catch (e: any) {
-    return policyText // Return original on error
+    return policyText
   }
 }
 
@@ -342,16 +448,30 @@ const handleDeleteRule = async () => {
           <option value="forbid">Forbid</option>
         </select>
       </div>
-      <UiButton @click="showCreateModal = true">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Create Rule
-      </UiButton>
+      <div class="flex gap-2">
+        <UiButton variant="outline" @click="handleOpenTemplateModal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Templates
+        </UiButton>
+        <UiButton @click="showCreateModal = true">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Create Rule
+        </UiButton>
+      </div>
     </div>
 
     <!-- Empty state toolbar (when no rules at all) -->
-    <div class="flex items-center justify-end gap-4" v-if="rules.length === 0 && !loading && !searchQuery && !filterEffect">
+    <div class="flex items-center justify-end gap-2" v-if="rules.length === 0 && !loading && !searchQuery && !filterEffect">
+      <UiButton variant="outline" @click="showTemplateModal = true">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Templates
+      </UiButton>
       <UiButton @click="showCreateModal = true">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -529,6 +649,55 @@ const handleDeleteRule = async () => {
           </UiButton>
         </div>
       </form>
+    </UiModal>
+
+    <!-- Template Selector Modal -->
+    <UiModal v-model="showTemplateModal" title="Policy Templates" size="lg">
+      <div v-if="templatesLoading" class="flex items-center justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+      </div>
+      <div v-else-if="templates.length === 0" class="text-center py-8 text-[rgb(var(--text-muted))]">
+        No templates available
+      </div>
+      <div v-else class="space-y-6 max-h-[70vh] overflow-y-auto">
+        <div v-for="(categoryTemplates, category) in groupedTemplates" :key="category" class="space-y-3">
+          <h3 class="text-sm font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wide border-b border-[rgb(var(--border))] pb-2">
+            {{ category }}
+          </h3>
+          <div class="space-y-3">
+            <div 
+              v-for="template in categoryTemplates" 
+              :key="template.id"
+              class="p-4 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--surface-elevated))] hover:border-indigo-400 transition-colors"
+            >
+              <div class="space-y-3">
+                <div>
+                  <h4 class="font-semibold text-[rgb(var(--text))] mb-1">{{ template.title }}</h4>
+                  <p class="text-sm text-[rgb(var(--text-muted))] mb-3">{{ template.description }}</p>
+                </div>
+                <div class="p-3 rounded bg-[rgb(var(--surface))] border border-[rgb(var(--border))] max-h-32 overflow-y-auto">
+                  <pre class="text-xs text-[rgb(var(--text-muted))] font-mono whitespace-pre-wrap break-words">{{ template.policy }}</pre>
+                </div>
+                <div class="flex justify-end pt-2 border-t border-[rgb(var(--border))]">
+                  <UiButton 
+                    size="sm" 
+                    @click="useTemplate(template)"
+                  >
+                    Use Template
+                  </UiButton>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end">
+          <UiButton variant="outline" @click="showTemplateModal = false">
+            Close
+          </UiButton>
+        </div>
+      </template>
     </UiModal>
 
     <!-- Edit Modal -->

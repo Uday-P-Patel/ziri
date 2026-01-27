@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express'
 import { requireAdmin } from '../middleware/auth.js'
 import { serviceFactory } from '../services/service-factory.js'
 import { getDatabase } from '../db/index.js'
+import { getPolicyTemplates } from '../services/policy-template-service.js'
 
 const router: Router = Router()
 
@@ -270,6 +271,20 @@ router.delete('/', requireAdmin, async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(500).json({
       error: 'Failed to delete policy',
+      message: error.message
+    })
+  }
+})
+
+router.get('/templates', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const templates = getPolicyTemplates()
+    res.json({
+      templates
+    })
+  } catch (error: any) {
+    res.status(500).json({
+      error: 'Failed to get policy templates',
       message: error.message
     })
   }

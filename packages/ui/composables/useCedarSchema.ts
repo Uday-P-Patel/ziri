@@ -21,7 +21,7 @@ export function useCedarSchema() {
             const typeStr = convertTypeToCedar(attr.type, attr)
             cedar += `    "${attrName}"${optional}: ${typeStr},\n`
           }
-          cedar = cedar.slice(0, -2) + '\n' // Remove trailing comma
+          cedar = cedar.slice(0, -2) + '\n'
         }
         cedar += '  };\n\n'
       }
@@ -43,7 +43,7 @@ export function useCedarSchema() {
               const typeStr = convertTypeToCedar(attr.type, attr)
               cedar += `    "${attrName}"${optional}: ${typeStr},\n`
             }
-            cedar = cedar.slice(0, -2) + '\n' // Remove trailing comma
+            cedar = cedar.slice(0, -2) + '\n'
             cedar += '  }'
           }
         }
@@ -71,7 +71,7 @@ export function useCedarSchema() {
             cedar += `    context: ${appliesTo.context}\n`
           }
           
-          cedar = cedar.replace(/,\n$/, '\n') // Remove trailing comma
+          cedar = cedar.replace(/,\n$/, '\n')
           cedar += '  }'
         }
         cedar += ';\n\n'

@@ -33,7 +33,7 @@ export class PricingService {
   private db: Database.Database
   private cache: Map<string, ModelPricing> = new Map()
   private cacheTimestamp: number = 0
-  private readonly CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000
 
   constructor(db?: Database.Database) {
     this.db = db || getDatabase()

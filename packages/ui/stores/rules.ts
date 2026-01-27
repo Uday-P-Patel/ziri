@@ -77,7 +77,7 @@ export const useRulesStore = defineStore('rules', {
                     `/api/v2025-01/projects/${configStore.projectId}/policies`,
                     {
                         method: 'DELETE',
-                        body: { policy: policyId } // Backend expects the policy content as ID for deletion based on docs
+                        body: { policy: policyId }
                     }
                 )
 

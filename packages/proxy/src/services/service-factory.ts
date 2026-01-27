@@ -22,7 +22,7 @@ class ServiceFactory {
    
   initialize(): void {
     const config = loadConfig()
-    const mode = config.mode || 'local' // Default to local
+    const mode = config.mode || 'local'
     
     if (this._mode === mode && this._authorizationService) {
  

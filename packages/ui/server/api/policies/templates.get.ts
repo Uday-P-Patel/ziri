@@ -1,12 +1,10 @@
  
-
-import { getAuthHeader } from '../../../utils/auth'
+import { getAuthHeader } from '../../utils/auth'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const proxyUrl = config.public.proxyUrl || 'http://localhost:3100'
   const authHeader = getAuthHeader(event)
-  const name = getRouterParam(event, 'name')
   
   if (!authHeader) {
     throw createError({
@@ -15,16 +13,13 @@ export default defineEventHandler(async (event) => {
     })
   }
   
+ 
+  const headers: Record<string, string> = {
+    'Authorization': authHeader.startsWith('Bearer ') ? authHeader : `Bearer ${authHeader}`
+  }
+  
   try {
-    const headers: Record<string, string> = {}
-    if (authHeader.startsWith('Bearer ')) {
-      headers['Authorization'] = authHeader
-    } else {
-      headers['X-Master-Key'] = authHeader
-    }
-    
-    const response = await fetch(`${proxyUrl}/api/providers/${name}/test`, {
-      method: 'POST',
+    const response = await fetch(`${proxyUrl}/api/policies/templates`, {
       headers
     })
     
@@ -38,14 +33,7 @@ export default defineEventHandler(async (event) => {
     
     const data = await response.json()
  
- 
-    return {
-      data: {
-        status: data.success ? 'success' : 'failed',
-        message: data.message,
-        models: data.models
-      }
-    }
+    return data
   } catch (error: any) {
     if (error.statusCode) {
       throw error

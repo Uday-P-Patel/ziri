@@ -133,3 +133,107 @@ export async function chatCompletions(request: ChatCompletionRequest): Promise<C
   
   return result as ChatCompletionResponse
 }
+
+export interface EmbeddingsRequest {
+  provider: string
+  model: string
+  input: string | string[] | Array<string | number[]>
+  [key: string]: any
+}
+
+export async function createEmbeddings(request: EmbeddingsRequest): Promise<any> {
+  const provider = providerService.getProvider(request.provider)
+  if (!provider) {
+    throw new Error(`Provider '${request.provider}' not configured`)
+  }
+
+  if (!provider.baseUrl.includes('openai')) {
+    throw new Error('LLM provider error: embeddings currently supported only for OpenAI-compatible providers')
+  }
+
+  const apiKey = providerService.getProviderApiKey(request.provider)
+  if (!apiKey) {
+    throw new Error(`Provider API key not found for '${request.provider}'`)
+  }
+
+  const endpoint = `${provider.baseUrl}/embeddings`
+  const { provider: _p, model, input, ...rest } = request
+  const requestBody = {
+    model,
+    input,
+    ...rest,
+  }
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(requestBody),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`LLM provider error: ${response.status} ${errorText}`)
+  }
+
+  return response.json()
+}
+
+export interface ImageGenerationRequest {
+  provider: string
+  model: string
+  prompt: string
+  n?: number
+  size?: string
+  quality?: string
+  response_format?: 'url' | 'b64_json'
+  [key: string]: any
+}
+
+export async function createImages(request: ImageGenerationRequest): Promise<any> {
+  const provider = providerService.getProvider(request.provider)
+  if (!provider) {
+    throw new Error(`Provider '${request.provider}' not configured`)
+  }
+
+  if (!provider.baseUrl.includes('openai')) {
+    throw new Error('LLM provider error: image generation currently supported only for OpenAI-compatible providers')
+  }
+
+  const apiKey = providerService.getProviderApiKey(request.provider)
+  if (!apiKey) {
+    throw new Error(`Provider API key not found for '${request.provider}'`)
+  }
+
+  const endpoint = `${provider.baseUrl}/images/generations`
+  const { provider: _p, model, prompt, n, size, quality, response_format, ...rest } = request
+  const requestBody = {
+    model,
+    prompt,
+    n,
+    size,
+    quality,
+    response_format,
+    ...rest,
+  }
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(requestBody),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`LLM provider error: ${response.status} ${errorText}`)
+  }
+
+  return response.json()
+}
+
+

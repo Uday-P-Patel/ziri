@@ -163,8 +163,8 @@ const convertToUserKeyEntity = (userKeyId: string, formData: { status: 'active' 
       current_monthly_spend: normalizeDecimal(original.attrs.current_monthly_spend, 4),
       last_daily_reset: original.attrs.last_daily_reset,
       last_monthly_reset: original.attrs.last_monthly_reset,
-      status: formData.status, // Only editable field
-      user: original.attrs.user // Keep user reference
+      status: formData.status,
+      user: original.attrs.user
     },
     parents: original.parents || []
   }

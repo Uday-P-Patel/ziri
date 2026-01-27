@@ -191,10 +191,10 @@ const stats = computed(() => {
   return {
     totalRequests,
     totalSpend: overviewStats.value.totalCost || 0,
-    avgResponseTime: 0, // Not available in current API
+    avgResponseTime: 0,
     successRate: parseFloat(successRate),
-    activeUsers: 0, // Not available in current API
-    requestsToday: 0 // Not available in current API
+    activeUsers: 0,
+    requestsToday: 0
   }
 })
 

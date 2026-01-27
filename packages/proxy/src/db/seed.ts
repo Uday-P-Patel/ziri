@@ -1,68 +1,9 @@
 import { getDatabase } from './index.js'
 import { localSchemaStore } from '../services/local/local-schema-store.js'
 import { localPolicyStore } from '../services/local/local-policy-store.js'
+import { loadPolicyTemplates } from '../services/policy-template-service.js'
+import { shouldUpdateSchema, getDefaultSchema } from '../services/schema-service.js'
 import type * as cedarType from '@cedar-policy/cedar-wasm/nodejs'
-
-const defaultCedarTextSchema = `
-type RequestContext = {
-  day_of_week: __cedar::String,
-  hour: __cedar::Long,
-  ip_address: __cedar::ipaddr,
-  is_emergency: __cedar::Bool,
-  model_name: __cedar::String,
-  model_provider: __cedar::String,
-  request_time: __cedar::String
-};
-
-entity Resource;
-
-entity User = {
-  user_id: __cedar::String,
-  email: __cedar::String,
-  department: __cedar::String,
-  is_agent: __cedar::Bool,
-  limit_requests_per_minute: __cedar::Long
-};
-
-entity UserKey = {
-  current_daily_spend: __cedar::decimal,
-  current_monthly_spend: __cedar::decimal,
-  last_daily_reset: __cedar::String,
-  last_monthly_reset: __cedar::String,
-  status: __cedar::String,
-  user: User
-};
-
-action "completion" appliesTo {
-  principal: [UserKey],
-  resource: [Resource],
-  context: RequestContext
-};
-
-action "fine_tuning" appliesTo {
-  principal: [UserKey],
-  resource: [Resource],
-  context: RequestContext
-};
-
-action "image_generation" appliesTo {
-  principal: [UserKey],
-  resource: [Resource],
-  context: RequestContext
-};
-
-action "embedding" appliesTo {
-  principal: [UserKey],
-  resource: [Resource],
-  context: RequestContext
-};
-
-action "moderation" appliesTo {
-  principal: [UserKey],
-  resource: [Resource],
-  context: RequestContext
-};
-`
 
 function isCedarTextFormat(schemaData: string): boolean {
   return /^\s*(type\s+\w+|entity\s+\w+|action\s+)/m.test(schemaData.trim())
@@ -76,15 +17,12 @@ export async function seedDefaultSchema(): Promise<void> {
   if (existing) {
     const isCedarText = isCedarTextFormat(existing.content)
     
-    if (isCedarText) {
-      console.log('[SEED] Schema already exists in Cedar text format, skipping seed')
-      return
-    } else {
+    if (!isCedarText) {
       console.log('[SEED] Schema exists in old JSON format, migrating to Cedar text...')
       console.log('[SEED] Converting existing JSON schema to Cedar text...')
       
       try {
-        const jsonSchema = JSON.parse(existing.schema_data)
+        const jsonSchema = JSON.parse(existing.content)
         
         const cedar = await import('@cedar-policy/cedar-wasm/nodejs')
         const textConversion = cedar.schemaToText(jsonSchema as any)
@@ -92,7 +30,7 @@ export async function seedDefaultSchema(): Promise<void> {
         if (textConversion.type === 'failure') {
           const errors = textConversion.errors.map((e: any) => e.message || JSON.stringify(e)).join(', ')
           console.error(`[SEED] Failed to convert JSON to Cedar text: ${errors}`)
-          console.log('[SEED] Replacing with default Cedar text schema...')
+          console.log('[SEED] Replacing with default Cedar text schema from file...')
         } else {
           const version = `v${Date.now()}`
           db.prepare(`
@@ -101,21 +39,41 @@ export async function seedDefaultSchema(): Promise<void> {
             WHERE id = ?
           `).run(textConversion.text, version, existing.id)
           console.log('[SEED] ✅ Schema migrated to Cedar text format')
+          
+          const comparison = await shouldUpdateSchema()
+          
+          if (comparison.shouldUpdate) {
+            console.log('[SEED] Schema file differs from DB, updating...')
+            await localSchemaStore.updateSchema(comparison.fileSchema)
+            console.log('[SEED] ✅ Schema updated from file')
+          } else {
+            console.log('[SEED] Schema matches file, no update needed')
+          }
           return
         }
       } catch (error: any) {
         console.error(`[SEED] Error migrating schema: ${error.message}`)
-        console.log('[SEED] Replacing with default Cedar text schema...')
+        console.log('[SEED] Replacing with default Cedar text schema from file...')
       }
+    } else {
+      const comparison = await shouldUpdateSchema()
+      
+      if (comparison.shouldUpdate) {
+        console.log('[SEED] Schema file differs from DB, updating...')
+        await localSchemaStore.updateSchema(comparison.fileSchema)
+        console.log('[SEED] ✅ Schema updated from file')
+      } else {
+        console.log('[SEED] Schema matches file, no update needed')
+      }
+      return
     }
   }
   
-  console.log('[SEED] Seeding default schema...')
+  console.log('[SEED] No schema exists, seeding default schema from file...')
   
-  console.log('[SEED] Storing Cedar text schema (will convert to JSON on retrieval)...')
-  
-  await localSchemaStore.updateSchema(defaultCedarTextSchema)
-  console.log('[SEED] ✅ Default Cedar text schema seeded')
+  const fileSchema = getDefaultSchema()
+  await localSchemaStore.updateSchema(fileSchema)
+  console.log('[SEED] ✅ Default Cedar text schema seeded from file')
 }
 
 export async function seedDefaultPolicy(): Promise<void> {
@@ -140,4 +98,6 @@ export async function seedDefaultPolicy(): Promise<void> {
 export async function seedDefaults(): Promise<void> {
   await seedDefaultSchema()
   await seedDefaultPolicy()
+  
+  loadPolicyTemplates()
 }

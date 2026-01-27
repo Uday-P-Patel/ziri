@@ -31,7 +31,7 @@ router.get('/', (req: AuthenticatedRequest, res: Response) => {
     try {
       decryptedEmail = decrypt(user.email)
     } catch (error: any) {
-      decryptedEmail = user.email // Fallback to plain text
+      decryptedEmail = user.email
     }
     
     res.json({
@@ -39,7 +39,7 @@ router.get('/', (req: AuthenticatedRequest, res: Response) => {
       email: decryptedEmail,
       name: user.name || '',
       role: user.id === 'admin' ? 'admin' : 'user',
-      status: user.status, // INTEGER: 0=inactive, 1=active, 2=revoked
+      status: user.status,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
       lastLogin: user.last_sign_in || null
@@ -166,11 +166,11 @@ router.get('/usage', async (req: AuthenticatedRequest, res: Response) => {
  
     res.json({
       currentDailySpend: parseDecimal(attrs.current_daily_spend),
-      dailySpendLimit: 0, // TODO: Fetch from User entity if limits are needed
+      dailySpendLimit: 0,
       currentMonthlySpend: parseDecimal(attrs.current_monthly_spend),
-      monthlySpendLimit: 0, // TODO: Fetch from User entity if limits are needed
-      totalRequests: 0, // TODO: Implement when logging is added
-      totalTokens: 0 // TODO: Implement when logging is added
+      monthlySpendLimit: 0,
+      totalRequests: 0,
+      totalTokens: 0
     })
   } catch (error: any) {
     console.error('[ME] Get usage error:', error)

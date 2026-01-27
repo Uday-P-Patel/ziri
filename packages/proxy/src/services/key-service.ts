@@ -15,9 +15,9 @@ export interface CreateKeyInput {
 }
 
 export interface ApiKey {
-  id: string // user_agent_keys.id (TEXT)
-  userId: string // auth_id
-  apiKey: string // Decrypted
+  id: string
+  userId: string
+  apiKey: string
   createdAt: string
 }
 

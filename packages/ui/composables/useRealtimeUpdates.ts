@@ -40,7 +40,7 @@ export function useRealtimeUpdates(options: UseRealtimeUpdatesOptions = {}) {
   let pendingEvents: RealtimeEvent[] = []
   
   const debounceMs = options.debounceMs || 500
-  const pauseWhenHidden = options.pauseWhenHidden !== false // Default true
+  const pauseWhenHidden = options.pauseWhenHidden !== false
   
    
   const processEvent = (event: RealtimeEvent) => {
@@ -76,7 +76,7 @@ export function useRealtimeUpdates(options: UseRealtimeUpdatesOptions = {}) {
   
   const connect = () => {
     if (eventSource) {
-      return // Already connected
+      return
     }
     
     const authHeader = getAuthHeader()
