@@ -63,13 +63,46 @@
           
           <div class="pt-4 border-t-2 border-[rgb(var(--border))]">
             <div class="flex items-center justify-between mb-2">
-              <p class="text-xs font-semibold text-[rgb(var(--text-muted))] uppercase tracking-wider">API Key</p>
-              <UiCopyButton v-if="apiKey" :text="apiKey" size="sm" />
+              <div class="flex items-center gap-2">
+                <p class="text-xs font-semibold text-[rgb(var(--text-muted))] uppercase tracking-wider">API Key</p>
+                <span 
+                  v-if="keyStatus"
+                  :class="[
+                    'px-2 py-0.5 rounded text-xs font-semibold',
+                    keyStatus === 'active' 
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : keyStatus === 'revoked'
+                      ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  ]"
+                >
+                  {{ keyStatus.charAt(0).toUpperCase() + keyStatus.slice(1) }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <UiButton
+                  v-if="apiKey && keyStatus === 'active'"
+                  variant="ghost"
+                  size="sm"
+                  @click="handleRotateKey"
+                  :loading="isRotating"
+                  title="Rotate API Key"
+                  class="text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </UiButton>
+                <UiCopyButton v-if="apiKey" :text="apiKey" size="sm" />
+              </div>
             </div>
             <code v-if="apiKey" class="block p-3 rounded-lg bg-[rgb(var(--surface-elevated))] text-xs font-mono break-all text-[rgb(var(--text))]">
               {{ maskApiKey(apiKey) }}
             </code>
             <p v-else class="text-sm text-[rgb(var(--text-muted))] italic">No API key found. Contact your administrator.</p>
+            <p v-if="keyStatus === 'revoked'" class="text-xs text-red-600 dark:text-red-400 mt-2 italic">
+              This API key has been revoked and cannot be used. Contact your administrator to re-enable it.
+            </p>
           </div>
           
           <div class="grid grid-cols-2 gap-4 pt-4 border-t-2 border-[rgb(var(--border))]">
@@ -163,6 +196,45 @@
         </div>
       </div>
     </div>
+
+    <!-- Rotated Key Modal -->
+    <UiModal v-model="showRotatedKeyModal" title="API Key Rotated">
+      <div class="space-y-4">
+        <div class="p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <div>
+              <p class="text-sm font-semibold text-green-900 dark:text-green-100 mb-1">
+                API key rotated successfully
+              </p>
+              <p class="text-xs text-green-800 dark:text-green-200">
+                Your old API key is no longer valid. Use this new key for all future requests.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-xs font-semibold text-[rgb(var(--text-secondary))] mb-2">Your New API Key</label>
+          <div class="flex items-center gap-2">
+            <code class="flex-1 text-sm font-mono bg-[rgb(var(--surface-elevated))] border-2 border-[rgb(var(--border))] p-3 rounded-lg break-all text-[rgb(var(--text))]">
+              {{ rotatedKey }}
+            </code>
+            <UiButton size="sm" @click="copyRotatedKey">
+              Copy
+            </UiButton>
+          </div>
+        </div>
+        
+        <div class="flex justify-end">
+          <UiButton @click="closeRotatedKeyModal">
+            Done
+          </UiButton>
+        </div>
+      </div>
+    </UiModal>
    </div>
 </template>
 
@@ -189,6 +261,7 @@ const userInfo = ref({
 })
 
 const apiKey = ref<string | null>(null)
+const keyStatus = ref<'active' | 'revoked' | 'disabled' | null>(null)
 
 const usage = ref({
   currentDailySpend: 0,
@@ -202,6 +275,9 @@ const usage = ref({
 
 const loading = ref(false)
 const error = ref<string | null>(null)
+const isRotating = ref(false)
+const showRotatedKeyModal = ref(false)
+const rotatedKey = ref<string | null>(null)
 
 const loadProfile = async () => {
   if (!isAuthenticated.value) {
@@ -262,12 +338,27 @@ const loadProfile = async () => {
         const keyEntity = keysData.data[0]
         apiKey.value = keyEntity.apiKey || null
         
+        const status = keyEntity.attrs?.status || keyEntity.status
+        if (status === 'active' || status === 1) {
+          keyStatus.value = 'active'
+        } else if (status === 'revoked' || status === 2) {
+          keyStatus.value = 'revoked'
+        } else if (status === 'disabled') {
+          keyStatus.value = 'disabled'
+        } else {
+          keyStatus.value = 'active'
+        }
+        
         // Update spend values from keys response
         usage.value.currentDailySpend = typeof keyEntity.currentDailySpend === 'number' ? keyEntity.currentDailySpend : parseFloat(keyEntity.currentDailySpend) || 0
         usage.value.currentMonthlySpend = typeof keyEntity.currentMonthlySpend === 'number' ? keyEntity.currentMonthlySpend : parseFloat(keyEntity.currentMonthlySpend) || 0
         usage.value.lastDailyReset = keyEntity.lastDailyReset || ''
         usage.value.lastMonthlyReset = keyEntity.lastMonthlyReset || ''
+      } else {
+        keyStatus.value = null
       }
+    } else {
+      keyStatus.value = null
     }
     
     if (usageResponse.ok) {
@@ -293,6 +384,54 @@ const loadProfile = async () => {
     toast.error('Failed to load profile')
   } finally {
     loading.value = false
+  }
+}
+
+const handleRotateKey = async () => {
+  if (isRotating.value) return
+  
+  try {
+    isRotating.value = true
+    const authHeader = getAuthHeader()
+    if (!authHeader) {
+      throw new Error('Please login first')
+    }
+    
+    const response = await fetch('/api/me/rotate', {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader
+      }
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: response.statusText }))
+      throw new Error(errorData.error || 'Failed to rotate key')
+    }
+    
+    const result = await response.json()
+    rotatedKey.value = result.apiKey
+    showRotatedKeyModal.value = true
+    
+    await loadProfile()
+    
+    toast.success('API key rotated successfully')
+  } catch (e: any) {
+    toast.error(e.message || 'Failed to rotate key')
+  } finally {
+    isRotating.value = false
+  }
+}
+
+const closeRotatedKeyModal = () => {
+  showRotatedKeyModal.value = false
+  rotatedKey.value = null
+}
+
+const copyRotatedKey = () => {
+  if (rotatedKey.value) {
+    navigator.clipboard.writeText(rotatedKey.value)
+    toast.success('New API key copied to clipboard')
   }
 }
 

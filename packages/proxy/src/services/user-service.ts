@@ -6,9 +6,10 @@ import { randomBytes } from 'crypto'
 export interface CreateUserInput {
   email: string
   name: string
-  department: string
+  group?: string
   isAgent: boolean
   limitRequestsPerMinute?: number
+  createApiKey?: boolean
 }
 
 export interface User {
@@ -16,7 +17,7 @@ export interface User {
   userId: string
   email: string
   name: string
-  department?: string
+  group?: string
   isAgent: boolean
   status: number
   createdAt: string
@@ -49,7 +50,7 @@ export async function createUser(input: CreateUserInput): Promise<{ user: User; 
   const encryptedEmail = encrypt(input.email)
   
   const result = db.prepare(`
-    INSERT INTO auth (id, email, email_hash, name, password, dept, is_agent, status)
+    INSERT INTO auth (id, email, email_hash, name, password, "group", is_agent, status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     userId,
@@ -57,7 +58,7 @@ export async function createUser(input: CreateUserInput): Promise<{ user: User; 
     emailHash,
     input.name,
     passwordHash,
-    input.department || null,
+    input.group || null,
     input.isAgent ? 1 : 0,
     1
   )
@@ -77,7 +78,7 @@ export async function createUser(input: CreateUserInput): Promise<{ user: User; 
     attrs: {
       user_id: userId,
       email: input.email,
-      department: input.department,
+      group: input.group || '',
       is_agent: input.isAgent,
       limit_requests_per_minute: limitRequestsPerMinute
     },
@@ -91,53 +92,60 @@ export async function createUser(input: CreateUserInput): Promise<{ user: User; 
     throw new Error(`Failed to create User entity: ${error.message}`)
   }
   
-  const userKeyId = generateUserKeyId()
-  const userKeyEntity = {
-    uid: { type: 'UserKey', id: userKeyId },
-    attrs: {
-      current_daily_spend: toDecimalFour(0),
-      current_monthly_spend: toDecimalFour(0),
-      last_daily_reset: creationTime,
-      last_monthly_reset: creationTime,
-      status: 'active' as const,
-      user: {
-        __entity: {
-          type: 'User',
-          id: userId
-        }
-      }
-    },
-    parents: []
-  }
+  console.log(`[USER SERVICE] createUser - createApiKey value:`, input.createApiKey, `type:`, typeof input.createApiKey)
   
-  try {
-    await entityStore.createEntity(userKeyEntity, 1)
-  } catch (error: any) {
-    try {
-      await entityStore.deleteEntity(`User::"${userId}"`)
-    } catch (deleteError) {
-      console.warn('[USER SERVICE] Failed to rollback User entity:', deleteError)
-    }
-    db.prepare('DELETE FROM auth WHERE id = ?').run(userId)
-    throw new Error(`Failed to create UserKey entity: ${error.message}`)
-  }
-  
-  try {
-    const { generateApiKey, hashApiKey } = await import('../utils/api-key.js')
-    const apiKey = generateApiKey(userId)
-    const keyHash = hashApiKey(apiKey)
-    const encryptedKey = encrypt(apiKey)
-    const keyId = `key-${randomBytes(8).toString('hex')}`
-    db.prepare(`
-      INSERT INTO user_agent_keys (id, key_value, key_hash, auth_id)
-      VALUES (?, ?, ?, ?)
-    `).run(keyId, encryptedKey, keyHash, userId)
+  if (input.createApiKey === true) {
+    console.log(`[USER SERVICE] Creating UserKey entity and API key for user ${userId}`)
     
-    console.log(`[USER SERVICE] API key created automatically for user ${userId}`)
-  } catch (error: any) {
-    console.warn(`[USER SERVICE] Failed to create API key for user ${userId}:`, error.message)
+    const userKeyId = generateUserKeyId()
+    const userKeyEntity = {
+      uid: { type: 'UserKey', id: userKeyId },
+      attrs: {
+        current_daily_spend: toDecimalFour(0),
+        current_monthly_spend: toDecimalFour(0),
+        last_daily_reset: creationTime,
+        last_monthly_reset: creationTime,
+        status: 'active' as const,
+        user: {
+          __entity: {
+            type: 'User',
+            id: userId
+          }
+        }
+      },
+      parents: []
+    }
+    
+    try {
+      await entityStore.createEntity(userKeyEntity, 1)
+    } catch (error: any) {
+      try {
+        await entityStore.deleteEntity(`User::"${userId}"`)
+      } catch (deleteError) {
+        console.warn('[USER SERVICE] Failed to rollback User entity:', deleteError)
+      }
+      db.prepare('DELETE FROM auth WHERE id = ?').run(userId)
+      throw new Error(`Failed to create UserKey entity: ${error.message}`)
+    }
+    
+    try {
+      const { generateApiKey, hashApiKey } = await import('../utils/api-key.js')
+      const apiKey = generateApiKey(userId)
+      const keyHash = hashApiKey(apiKey)
+      const encryptedKey = encrypt(apiKey)
+      const keyId = `key-${randomBytes(8).toString('hex')}`
+      db.prepare(`
+        INSERT INTO user_agent_keys (id, key_value, key_hash, auth_id)
+        VALUES (?, ?, ?, ?)
+      `).run(keyId, encryptedKey, keyHash, userId)
+      console.log(`[USER SERVICE] ✓ API key created automatically for user ${userId}`)
+    } catch (error: any) {
+      console.warn(`[USER SERVICE] ✗ Failed to create API key for user ${userId}:`, error.message)
+    }
+  } else {
+    console.log(`[USER SERVICE] Skipping UserKey entity and API key creation for user ${userId} (createApiKey: ${input.createApiKey})`)
   }
-  
+
   const { sendEmail, generateUserCredentialsEmail } = await import('./email-service.js')
   const { loadConfig } = await import('../config.js')
   
@@ -198,7 +206,7 @@ export function listUsers(params?: {
       'name': 'name',
       'email': 'email',
       'userId': 'id',
-      'department': 'dept',
+      'group': '"group"',
       'createdAt': 'created_at',
       'updatedAt': 'updated_at',
       'lastSignIn': 'last_sign_in',
@@ -302,9 +310,9 @@ export async function updateUser(userId: string, updates: Partial<CreateUserInpu
     values.push(updates.name)
   }
   
-  if (updates.department !== undefined) {
-    fields.push('dept = ?')
-    values.push(updates.department || null)
+  if (updates.group !== undefined) {
+    fields.push('"group" = ?')
+    values.push(updates.group || null)
   }
   
   if (updates.isAgent !== undefined) {
@@ -460,7 +468,7 @@ function mapDbUserToUser(dbUser: any): User {
     userId: dbUser.id,
     email: decryptedEmail,
     name: dbUser.name || '',
-    department: dbUser.dept || undefined,
+    group: dbUser.group ?? undefined,
     isAgent: dbUser.is_agent === 1,
     status,
     createdAt: dbUser.created_at,

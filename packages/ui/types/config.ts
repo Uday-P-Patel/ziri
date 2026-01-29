@@ -37,7 +37,7 @@ export interface GatewayConfig {
     proxyUrl?: string
     port?: number
     logLevel?: 'debug' | 'info' | 'warn' | 'error'
-    masterKey?: string
+    rootKey?: string
 }
 
 export const defaultConfig: GatewayConfig = {
@@ -54,5 +54,5 @@ export const defaultConfig: GatewayConfig = {
     proxyUrl: '',
     port: 3100,
     logLevel: 'info',
-    masterKey: ''
+    rootKey: ''
 }

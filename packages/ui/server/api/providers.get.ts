@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
     if (authHeader.startsWith('Bearer ')) {
       headers['Authorization'] = authHeader
     } else {
-      headers['X-Master-Key'] = authHeader
+      headers['X-Root-Key'] = authHeader
     }
     
     const response = await fetch(`${proxyUrl}/api/providers`, {

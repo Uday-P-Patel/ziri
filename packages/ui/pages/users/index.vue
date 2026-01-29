@@ -26,9 +26,10 @@ const isDeletingUser = ref(false)
 const newUser = reactive<CreateUserInput>({
   email: '',
   name: '',
-  department: '',
+  group: '',
   isAgent: false,
-  limitRequestsPerMinute: 100
+  limitRequestsPerMinute: 100,
+  createApiKey: true
 })
 
  
@@ -78,8 +79,8 @@ onMounted(async () => {
 })
 
 const handleCreateUser = async () => {
-  if (!newUser.email.trim() || !newUser.name.trim() || !newUser.department.trim()) {
-    toast.warning('Email, name, and department are required')
+  if (!newUser.email.trim() || !newUser.name.trim()) {
+    toast.warning('Email and name are required')
     return
   }
   
@@ -104,9 +105,10 @@ const handleCreateUser = async () => {
     Object.assign(newUser, {
       email: '',
       name: '',
-      department: '',
+      group: '',
       isAgent: false,
-      limitRequestsPerMinute: 100
+      limitRequestsPerMinute: 100,
+      createApiKey: true
     })
   } catch (error: any) {
     toast.error(`Failed to create user: ${error.message}`)
@@ -310,7 +312,19 @@ const copyPassword = () => {
       <form @submit.prevent="handleCreateUser" class="space-y-4">
         <UiInput v-model="newUser.email" label="Email" type="email" required />
         <UiInput v-model="newUser.name" label="Name" required />
-        <UiInput v-model="newUser.department" label="Department" required />
+        <UiInput v-model="newUser.group" label="Group" />
+        
+        <div class="flex items-center gap-2">
+          <input 
+            type="checkbox" 
+            id="createApiKey"
+            v-model="newUser.createApiKey"
+            class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <label for="createApiKey" class="text-sm font-medium text-[rgb(var(--text))]">
+            Create API Key
+          </label>
+        </div>
         
         <div class="flex items-center gap-2">
           <input 

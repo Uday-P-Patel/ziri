@@ -21,6 +21,7 @@ import {
   writeCredentials,
   type ProviderMetadata
 } from '../config/index.js'
+import { getRootKey } from '../utils/root-key.js'
 
 const program = new Command()
 
@@ -178,17 +179,15 @@ function promptPassword(message: string): Promise<string> {
   })
 }
 
-async function getMasterKey(): Promise<string> {
-  const envKey = process.env.ZS_AI_MASTER_KEY
-  if (envKey) {
-    return envKey
+async function getRootKeyForCli(): Promise<string> {
+  const key = getRootKey()
+  if (key) {
+    return key
   }
-  
-  const password = await promptPassword('Enter master password for credentials (or set ZS_AI_MASTER_KEY env var): ')
+  const password = await promptPassword('Enter root key for credentials (or set ZIRI_ROOT_KEY env var): ')
   if (!password || password.trim().length === 0) {
-    throw new Error('Master password cannot be empty')
+    throw new Error('Root key cannot be empty')
   }
-  
   return password.trim()
 }
 
@@ -219,8 +218,8 @@ providersCmd
   .action(async () => {
     try {
       const metadataList = listProviderMetadata()
-      const masterKey = await getMasterKey()
-      const credentialsList = listProvidersWithCredentials(masterKey)
+      const rootKey = await getRootKeyForCli()
+      const credentialsList = listProvidersWithCredentials(rootKey)
       
       if (Object.keys(metadataList).length === 0) {
         console.log('No providers configured.')
@@ -262,9 +261,9 @@ providersCmd
         process.exit(1)
       }
       
-      const masterKey = await getMasterKey()
+      const rootKey = await getRootKeyForCli()
       removeProviderMetadata(name)
-      removeProviderCredentials(name, masterKey)
+      removeProviderCredentials(name, rootKey)
       console.log(`✅ Removed provider '${name}'`)
     } catch (error: any) {
       console.error(`❌ Error: ${error.message}`)
@@ -286,8 +285,8 @@ providersCmd
         process.exit(1)
       }
       
-      const masterKey = await getMasterKey()
-      const credentials = getProviderCredentials(name, masterKey)
+      const rootKey = await getRootKeyForCli()
+      const credentials = getProviderCredentials(name, rootKey)
       
       if (!credentials) {
         console.error(`❌ API key for '${name}' not configured`)
@@ -384,8 +383,8 @@ providersCmd
       }
       setProviderMetadata(name, metadata)
       
-      const masterKey = await getMasterKey()
-      setProviderCredentials(name, apiKey.trim(), masterKey)
+      const rootKey = await getRootKeyForCli()
+      setProviderCredentials(name, apiKey.trim(), rootKey)
       
       console.log(`✅ Added provider '${name}'`)
       console.log(`   Display Name: ${metadata.displayName}`)

@@ -1,7 +1,7 @@
  
  
 import { readConfig, type ZiriConfig } from './config/index.js'
-import { getMasterKey, initializeMasterKey } from './utils/master-key.js'
+import { getRootKey, initializeRootKey } from './utils/root-key.js'
 
 export interface ProxyConfig {
   mode: 'local' | 'live'
@@ -14,7 +14,7 @@ export interface ProxyConfig {
   orgId?: string
   clientId?: string
   clientSecret?: string
-  masterKey: string
+  rootKey: string
   logLevel: 'debug' | 'info' | 'warn' | 'error'
   email?: {
     enabled: boolean
@@ -50,9 +50,9 @@ export function loadConfig(): ProxyConfig {
     console.warn('[CONFIG] Config file not found, using defaults')
   }
   
-  let masterKey = getMasterKey()
-  if (!masterKey) {
-    masterKey = initializeMasterKey()
+  let rootKey = getRootKey()
+  if (!rootKey) {
+    rootKey = initializeRootKey()
   }
 
   const mode = fileConfig?.mode || DEFAULT_MODE
@@ -84,7 +84,7 @@ export function loadConfig(): ProxyConfig {
     orgId: fileConfig?.orgId,
     clientId: fileConfig?.clientId,
     clientSecret: fileConfig?.clientSecret,
-    masterKey,
+    rootKey,
     logLevel: ((fileConfig as any)?.logLevel as ProxyConfig['logLevel']) || DEFAULT_LOG_LEVEL,
     email: emailConfig
   }

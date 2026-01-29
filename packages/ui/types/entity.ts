@@ -21,7 +21,7 @@ export interface EntityAttrs {
  
     user_id?: string
     email?: string
-    department?: string
+    group?: string
     is_agent?: boolean
     limit_requests_per_minute?: number
  
@@ -68,7 +68,7 @@ export interface Key {
  
     name?: string
     email?: string
-    department?: string
+    group?: string
     isAgent?: boolean
     limitRequestsPerMinute?: number
  

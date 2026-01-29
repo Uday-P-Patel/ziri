@@ -71,14 +71,14 @@ Manage configuration (if implemented).
 
 On first run, the server will:
 
-1. **Generate a master key** - Displayed in console, save this for admin login
+1. **Generate a root key** - Written to `.ziri-root-key` in the config directory (not printed to logs). Use it as the admin password. Set `ZIRI_ROOT_KEY` for a fixed key.
 2. **Initialize database** - Created at:
    - **Windows**: `%APPDATA%\ziri\proxy.db`
    - **macOS/Linux**: `~/.ziri/proxy.db`
 3. **Create admin user**:
-   - **User ID**: `admin`
-   - **Password**: Same as master key
-   - **Email**: `admin@ziri.local`
+   - **User ID**: `ziri`
+   - **Password**: Same as root key
+   - **Email**: `ziri@ziri.local`
 
 ## 🌐 Access Points
 
@@ -169,7 +169,7 @@ This package bundles:
 
 ## 🔐 Security
 
-- **Master Key**: Generated on first run, used for admin authentication
+- **Root Key**: Generated on first run (written to `.ziri-root-key`), used for admin authentication
 - **API Keys**: Stored as hashes in database
 - **Provider Keys**: Encrypted before storage
 - **Passwords**: Hashed using bcrypt
@@ -178,7 +178,7 @@ This package bundles:
 
 - `PORT` - Server port (default: 3100)
 - `HOST` - Server host (default: localhost)
-- `ZS_AI_MASTER_KEY` - Master key for admin auth (optional, auto-generated)
+- `ZIRI_ROOT_KEY` - Root key for admin auth (optional; if unset, key is written to `.ziri-root-key`)
 - `ZS_AI_ENCRYPTION_KEY` - Encryption key for sensitive data (optional, auto-generated)
 - `NODE_ENV` - Environment (`development` or `production`)
 
@@ -196,7 +196,15 @@ The server automatically finds the next available port if the configured port is
 
 ### Database Issues
 
-Delete the database file and restart - it will be recreated:
+To start completely fresh (drop all tables; schema and admin user will be recreated on next start):
+
+```bash
+node scripts/drop-tables.js
+```
+
+Add `--reset-root-key` to also remove `.ziri-root-key` so a new root key is generated. Then start the proxy again.
+
+To only delete the database file manually:
 - **Windows**: `%APPDATA%\ziri\proxy.db`
 - **macOS/Linux**: `~/.ziri/proxy.db`
 

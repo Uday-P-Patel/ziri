@@ -13,7 +13,6 @@
   "scripts": {
     "dev:proxy": "npm run dev --workspace=packages/proxy",
     "build": "npm run build:ui && npm run build:proxy",
-    "build": "npm run build:ui && npm run build:proxy",
     "build:ui": "npm run build --workspace=packages/ui",
     "build:proxy": "npm run build:proxy --workspace=packages/proxy",
     "prepare": "npm run postinstall --workspace=packages/ui || true",

@@ -54,11 +54,9 @@ export class LocalPolicyStore implements IPolicyStore {
   async deletePolicy(policy: string): Promise<void> {
     const db = getDatabase()
     
- 
     const result = db.prepare(`
-      UPDATE schema_policy 
-      SET status = 0, updated_at = datetime('now')
-      WHERE obj_type = 'policy' AND content = ? AND status = 1
+      DELETE FROM schema_policy 
+      WHERE obj_type = 'policy' AND content = ?
     `).run(policy)
     
     if (result.changes === 0) {

@@ -38,37 +38,86 @@ async function findUserKeyIdForUser(userId: string): Promise<string | null> {
   return userKeyEntity ? userKeyEntity.uid.id : null
 }
 
+async function hasActiveKey(userId: string): Promise<boolean> {
+  const entityStore = serviceFactory.getEntityStore()
+  
+  const allEntitiesResult = await entityStore.getEntities()
+  const allEntities = allEntitiesResult.data
+  const userKeyEntity = allEntities.find(e => 
+    e.uid.type === 'UserKey' && 
+    (e.attrs as any).user && 
+    (e.attrs as any).user.__entity && 
+    (e.attrs as any).user.__entity.id === userId
+  )
+  
+  if (!userKeyEntity) {
+    return false
+  }
+  
+  const status = (userKeyEntity.attrs as any).status
+  return status === 'active' || status === 1
+}
+
  
 export async function createKey(input: CreateKeyInput): Promise<{ apiKey: string; userId: string }> {
   const db = getDatabase()
-  
- 
   const user = userService.getUserById(input.userId)
   if (!user) {
     throw new Error('User not found')
   }
-  
- 
-  const userKeyId = await findUserKeyIdForUser(input.userId)
-  if (!userKeyId) {
-    throw new Error('UserKey entity not found for user. User may not have been properly created.')
+  const existingKeys = getKeysByUserId(input.userId)
+  if (existingKeys.length > 0) {
+    throw new Error('User already has an API key. Only one key per user is allowed.')
   }
   
- 
+  let userKeyId = await findUserKeyIdForUser(input.userId)
+  if (!userKeyId) {
+    console.log(`[KEY SERVICE] UserKey entity not found for user ${input.userId}, creating it now...`)
+    const entityStore = serviceFactory.getEntityStore()
+    const { toDecimalFour } = await import('../utils/cedar.js')
+    
+    const creationTime = new Date().toISOString()
+    const newUserKeyId = `uk-${randomBytes(8).toString('hex')}`
+    const userKeyEntity = {
+      uid: { type: 'UserKey', id: newUserKeyId },
+      attrs: {
+        current_daily_spend: toDecimalFour(0),
+        current_monthly_spend: toDecimalFour(0),
+        last_daily_reset: creationTime,
+        last_monthly_reset: creationTime,
+        status: 'active' as const,
+        user: {
+          __entity: {
+            type: 'User',
+            id: input.userId
+          }
+        }
+      },
+      parents: []
+    }
+    
+    try {
+      await entityStore.createEntity(userKeyEntity, 1)
+      userKeyId = newUserKeyId
+      console.log(`[KEY SERVICE] ✓ UserKey entity created for user ${input.userId}`)
+    } catch (error: any) {
+      throw new Error(`Failed to create UserKey entity: ${error.message}`)
+    }
+  }
+  
   const apiKey = generateApiKey(input.userId)
   const keyHash = hashApiKey(apiKey)
   
- 
   const encryptedKey = encrypt(apiKey)
   
- 
   const keyId = `key-${randomBytes(8).toString('hex')}`
   
- 
   db.prepare(`
     INSERT INTO user_agent_keys (id, key_value, key_hash, auth_id)
     VALUES (?, ?, ?, ?)
   `).run(keyId, encryptedKey, keyHash, input.userId)
+  
+  console.log(`[KEY SERVICE] ✓ API key created for user ${input.userId}`)
   
   return { apiKey, userId: input.userId }
 }

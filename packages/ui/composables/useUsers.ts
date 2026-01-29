@@ -10,7 +10,7 @@ export interface User {
   userId: string
   email: string
   name: string
-  department?: string
+  group?: string
   isAgent: boolean
   status: number
   createdAt: string
@@ -21,9 +21,10 @@ export interface User {
 export interface CreateUserInput {
   email: string
   name: string
-  department: string
+  group?: string
   isAgent: boolean
   limitRequestsPerMinute?: number
+  createApiKey?: boolean
 }
 
 const users = ref<User[]>([])

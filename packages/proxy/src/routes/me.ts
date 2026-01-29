@@ -6,6 +6,7 @@ import { requireAuth, type AuthenticatedRequest } from '../middleware/jwt-auth.j
 import { getDatabase } from '../db/index.js'
 import { decrypt } from '../utils/encryption.js'
 import { serviceFactory } from '../services/service-factory.js'
+import * as keyService from '../services/key-service.js'
 
 const router: Router = Router()
 
@@ -38,7 +39,7 @@ router.get('/', (req: AuthenticatedRequest, res: Response) => {
       userId: user.id,
       email: decryptedEmail,
       name: user.name || '',
-      role: user.id === 'admin' ? 'admin' : 'user',
+      role: user.id === 'ziri' ? 'admin' : 'user',
       status: user.status,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
@@ -224,6 +225,50 @@ router.get('/usage', async (req: AuthenticatedRequest, res: Response) => {
     res.status(500).json({
       error: 'Failed to get usage stats',
       code: 'GET_USAGE_ERROR'
+    })
+  }
+})
+
+router.post('/rotate', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.userId
+    if (!userId) {
+      res.status(401).json({
+        error: 'User ID not found in token',
+        code: 'INVALID_TOKEN'
+      })
+      return
+    }
+    
+    const result = await keyService.rotateKey(userId)
+    
+    res.json({
+      apiKey: result.apiKey,
+      userId: result.userId,
+      message: 'API key rotated successfully. Save the new key - it won\'t be shown again!'
+    })
+  } catch (error: any) {
+    console.error('[ME] Rotate key error:', error)
+    
+    if (error.message === 'User not found') {
+      res.status(404).json({
+        error: error.message,
+        code: 'USER_NOT_FOUND'
+      })
+      return
+    }
+    
+    if (error.message.includes('UserKey entity not found')) {
+      res.status(404).json({
+        error: 'No API key found for your account. Please contact your administrator.',
+        code: 'KEY_NOT_FOUND'
+      })
+      return
+    }
+    
+    res.status(500).json({
+      error: 'Failed to rotate key',
+      code: 'ROTATE_ERROR'
     })
   }
 })

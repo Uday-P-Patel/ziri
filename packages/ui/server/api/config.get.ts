@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
         provider: 'manual'
       },
       logLevel: 'info',
-      masterKey: ''
+      rootKey: ''
     }
   } catch (error: any) {
     console.error('[API] Error reading config:', error)

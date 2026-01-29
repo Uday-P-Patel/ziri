@@ -12,7 +12,7 @@ const { listRules } = useRules()
 const { listKeys } = useKeys()
 
 const isSaving = ref(false)
-const showMasterKey = ref(false)
+const showRootKey = ref(false)
 
  
 const form = reactive({
@@ -59,8 +59,8 @@ onMounted(async () => {
         from: ''
       }
       form.logLevel = config.logLevel || 'info'
-      if (config.masterKey) {
-        configStore.masterKey = config.masterKey
+      if (config.rootKey) {
+        configStore.rootKey = config.rootKey
       }
     } else {
  
@@ -124,10 +124,10 @@ const resetToDefaults = async () => {
   toast.info('Configuration reset to defaults')
 }
 
-const copyMasterKey = () => {
-  if (configStore.masterKey) {
-    navigator.clipboard.writeText(configStore.masterKey)
-    toast.success('Master key copied to clipboard')
+const copyRootKey = () => {
+  if (configStore.rootKey) {
+    navigator.clipboard.writeText(configStore.rootKey)
+    toast.success('Root key copied to clipboard')
   }
 }
 </script>
@@ -288,27 +288,27 @@ const copyMasterKey = () => {
       </div>
     </section>
 
-    <!-- Master Key (Read-only) -->
-    <section class="card" v-if="configStore.masterKey">
+    <!-- Root Key (Read-only) -->
+    <!-- <section class="card" v-if="configStore.rootKey">
       <div class="flex items-center gap-3 mb-5">
         <div class="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
           <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
           </svg>
         </div>
-        <h3 class="text-sm font-bold text-[rgb(var(--text))]">Master Key</h3>
+        <h3 class="text-sm font-bold text-[rgb(var(--text))]">Root Key</h3>
       </div>
       <div class="space-y-3">
         <div class="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
           <div class="flex items-center justify-between mb-2">
-            <p class="text-xs font-semibold text-yellow-900 dark:text-yellow-100">Master Key</p>
+            <p class="text-xs font-semibold text-yellow-900 dark:text-yellow-100">Root Key</p>
             <div class="flex gap-2">
               <button
                 type="button"
-                @click="showMasterKey = !showMasterKey"
+                @click="showRootKey = !showRootKey"
                 class="text-xs px-2 py-1 rounded bg-yellow-100 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 hover:bg-yellow-200 dark:hover:bg-yellow-700 transition-colors"
               >
-                {{ showMasterKey ? 'Hide' : 'Show' }}
+                {{ showRootKey ? 'Hide' : 'Show' }}
               </button>
               <button
                 type="button"
@@ -320,14 +320,14 @@ const copyMasterKey = () => {
             </div>
           </div>
           <code class="text-xs font-mono text-yellow-800 dark:text-yellow-200 break-all">
-            {{ showMasterKey ? configStore.masterKey : '••••••••••••••••••••••••••••••••' }}
+            {{ showRootKey ? configStore.rootKey : '••••••••••••••••••••••••••••••••' }}
           </code>
         </div>
         <p class="text-xs text-[rgb(var(--text-secondary))]">
-          ⚠️ This master key is required for all admin operations. Store it securely.
+          ⚠️ This root key is required for all admin operations. Store it securely.
         </p>
       </div>
-    </section>
+    </section> -->
 
     <!-- Actions -->
     <div class="flex gap-3">

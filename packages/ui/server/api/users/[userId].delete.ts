@@ -3,13 +3,13 @@
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const proxyUrl = config.public.proxyUrl || 'http://localhost:3100'
-  const masterKey = getHeader(event, 'x-master-key')
+  const rootKey = getHeader(event, 'x-root-key')
   const userId = getRouterParam(event, 'userId')
   
-  if (!masterKey) {
+  if (!rootKey) {
     throw createError({
       statusCode: 401,
-      statusMessage: 'Master key required'
+      statusMessage: 'Root key required'
     })
   }
   
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     const response = await fetch(`${proxyUrl}/api/users/${userId}`, {
       method: 'DELETE',
       headers: {
-        'X-Master-Key': masterKey
+        'X-Root-Key': rootKey
       }
     })
     

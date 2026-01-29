@@ -121,36 +121,36 @@ export class AuditLogService {
     const args: any[] = []
 
     if (params.authId) {
-      whereClause += ' AND auth_id = ?'
+      whereClause += ' AND audit_logs.auth_id = ?'
       args.push(params.authId)
     }
     if (params.apiKeyId) {
-      whereClause += ' AND api_key_id = ?'
+      whereClause += ' AND audit_logs.api_key_id = ?'
       args.push(params.apiKeyId)
     }
     if (params.provider) {
-      whereClause += ' AND provider = ?'
+      whereClause += ' AND audit_logs.provider = ?'
       args.push(params.provider)
     }
     if (params.model) {
-      whereClause += ' AND model = ?'
+      whereClause += ' AND audit_logs.model = ?'
       args.push(params.model)
     }
     if (params.decision) {
-      whereClause += ' AND decision = ?'
+      whereClause += ' AND audit_logs.decision = ?'
       args.push(params.decision)
     }
     if (params.startDate) {
-      whereClause += ' AND request_timestamp >= ?'
+      whereClause += ' AND audit_logs.request_timestamp >= ?'
       args.push(params.startDate)
     }
     if (params.endDate) {
-      whereClause += ' AND request_timestamp <= ?'
+      whereClause += ' AND audit_logs.request_timestamp <= ?'
       args.push(params.endDate)
     }
     if (params.search) {
       const searchPattern = `%${params.search}%`
-      whereClause += ' AND (auth_id LIKE ? OR model LIKE ? OR request_id LIKE ?)'
+      whereClause += ' AND (audit_logs.auth_id LIKE ? OR audit_logs.model LIKE ? OR audit_logs.request_id LIKE ?)'
       args.push(searchPattern, searchPattern, searchPattern)
     }
 
@@ -164,13 +164,13 @@ export class AuditLogService {
  
  
       const columnMap: Record<string, string> = {
-        'request_timestamp': 'request_timestamp',
-        'auth_id': 'auth_id',
-        'provider': 'provider',
-        'model': 'model',
-        'decision': 'decision',
-        'auth_duration_ms': 'auth_duration_ms',
-        'request_id': 'request_id'
+        'request_timestamp': 'audit_logs.request_timestamp',
+        'auth_id': 'audit_logs.auth_id',
+        'provider': 'audit_logs.provider',
+        'model': 'audit_logs.model',
+        'decision': 'audit_logs.decision',
+        'auth_duration_ms': 'audit_logs.auth_duration_ms',
+        'request_id': 'audit_logs.request_id'
       }
       const dbColumn = columnMap[params.sortBy]
       if (dbColumn) {
@@ -181,7 +181,7 @@ export class AuditLogService {
 
     const limit = params.limit || 100
     const offset = params.offset || 0
-    const dataSql = `SELECT * FROM audit_logs ${whereClause} ${orderByClause} LIMIT ? OFFSET ?`
+    const dataSql = `SELECT audit_logs.*, COALESCE(cost_tracking.total_cost, 0) AS spend FROM audit_logs LEFT JOIN cost_tracking ON audit_logs.cost_tracking_id = cost_tracking.id ${whereClause} ${orderByClause} LIMIT ? OFFSET ?`
     const data = this.db.prepare(dataSql).all(...args, limit, offset) as any[]
 
     return { data, total }

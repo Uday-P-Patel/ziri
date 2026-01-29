@@ -96,20 +96,7 @@ export function decryptCredentials(encryptedData: string, masterKey: string): Re
 }
 
  
-export function getMasterKey(): string | null {
- 
-  const envKey = process.env.ZS_AI_MASTER_KEY
-  if (envKey) {
-    return envKey
-  }
-  
- 
-
-  return null
-}
-
- 
-export function readCredentials(masterKey: string): Record<string, ProviderCredentials> | null {
+export function readCredentials(rootKey: string): Record<string, ProviderCredentials> | null {
   const credentialsPath = getCredentialsPath()
   
   if (!existsSync(credentialsPath)) {
@@ -118,7 +105,7 @@ export function readCredentials(masterKey: string): Record<string, ProviderCrede
   
   try {
     const encrypted = readFileSync(credentialsPath, 'utf-8')
-    return decryptCredentials(encrypted, masterKey)
+    return decryptCredentials(encrypted, rootKey)
   } catch (error: any) {
     console.error('Failed to read credentials:', error.message)
     return null
@@ -126,17 +113,14 @@ export function readCredentials(masterKey: string): Record<string, ProviderCrede
 }
 
  
-export function writeCredentials(credentials: Record<string, ProviderCredentials>, masterKey: string): void {
+export function writeCredentials(credentials: Record<string, ProviderCredentials>, rootKey: string): void {
   const credentialsPath = getCredentialsPath()
   const configDir = getConfigDir()
-  
- 
   if (!existsSync(configDir)) {
     mkdirSync(configDir, { recursive: true })
   }
-  
   try {
-    const encrypted = encryptCredentials(credentials, masterKey)
+    const encrypted = encryptCredentials(credentials, rootKey)
     writeFileSync(credentialsPath, encrypted, 'utf-8')
  
     if (process.platform !== 'win32') {
@@ -156,19 +140,19 @@ export function writeCredentials(credentials: Record<string, ProviderCredentials
 export function setProviderCredentials(
   providerName: string,
   apiKey: string,
-  masterKey: string
+  rootKey: string
 ): void {
-  const existing = readCredentials(masterKey) || {}
+  const existing = readCredentials(rootKey) || {}
   existing[providerName] = { apiKey }
-  writeCredentials(existing, masterKey)
+  writeCredentials(existing, rootKey)
 }
 
  
 export function getProviderCredentials(
   providerName: string,
-  masterKey: string
+  rootKey: string
 ): ProviderCredentials | null {
-  const credentials = readCredentials(masterKey)
+  const credentials = readCredentials(rootKey)
   if (!credentials) {
     return null
   }
@@ -178,20 +162,19 @@ export function getProviderCredentials(
  
 export function removeProviderCredentials(
   providerName: string,
-  masterKey: string
+  rootKey: string
 ): void {
-  const existing = readCredentials(masterKey)
+  const existing = readCredentials(rootKey)
   if (!existing || !existing[providerName]) {
     return
   }
-  
   delete existing[providerName]
-  writeCredentials(existing, masterKey)
+  writeCredentials(existing, rootKey)
 }
 
  
-export function listProvidersWithCredentials(masterKey: string): string[] {
-  const credentials = readCredentials(masterKey)
+export function listProvidersWithCredentials(rootKey: string): string[] {
+  const credentials = readCredentials(rootKey)
   if (!credentials) {
     return []
   }

@@ -39,6 +39,7 @@ const showEditModal = ref(false)
 const showKeyModal = ref(false)
 const generatedKey = ref('')
 const keyToEdit = ref<Key | null>(null)
+const isKeyRotated = ref(false)
 
  
 const isEditing = ref(false)
@@ -79,6 +80,10 @@ const isValidating = ref(false)
 
 const selectedUser = computed(() => {
   return users.value.find(u => u.userId === newKey.userId)
+})
+
+const usersWithoutKey = computed(() => {
+  return users.value.filter(u => !keys.value.some((k: Key) => k.userId === u.userId))
 })
 
  
@@ -265,6 +270,8 @@ const handleUpdateKey = async () => {
  
     await updateKey(keyToEdit.value.userKeyId, entity)
     
+    await fetchKeys()
+    
     showEditModal.value = false
     keyToEdit.value = null
     originalEntity.value = null
@@ -302,13 +309,12 @@ const handleCreateKey = async () => {
     isCreating.value = true
     const result = await createKey(newKey)
     generatedKey.value = result.apiKey
+    isKeyRotated.value = false
     showCreateModal.value = false
     showKeyModal.value = true
     
- 
     newKey.userId = ''
     
- 
     await fetchKeys()
   } catch (e) {
  
@@ -326,6 +332,7 @@ const handleRotateKey = async (userId: string) => {
     isRotating.value = userId
     const result = await rotateKey(userId)
     generatedKey.value = result.apiKey
+    isKeyRotated.value = true
     showKeyModal.value = true
   } catch (e) {
  
@@ -337,6 +344,7 @@ const handleRotateKey = async (userId: string) => {
 const closeKeyModal = () => {
   showKeyModal.value = false
   generatedKey.value = ''
+  isKeyRotated.value = false
 }
 
  
@@ -379,22 +387,22 @@ const { getAuthHeader } = useAdminAuth()
           <option value="disabled">Disabled</option>
         </select>
       </div>
-      <!-- <UiButton @click="showCreateModal = true">
+      <UiButton @click="showCreateModal = true">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
         Create Key
-      </UiButton> -->
+      </UiButton>
     </div>
 
     <!-- Empty state toolbar (when no keys at all) -->
     <div class="flex items-center justify-end gap-4" v-if="keys.length === 0 && !loading && !searchQuery && !filterStatus">
-      <!-- <UiButton @click="showCreateModal = true">
+      <UiButton @click="showCreateModal = true">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
         Create Key
-      </UiButton> -->
+      </UiButton>
     </div>
 
     <!-- Keys Table -->
@@ -416,12 +424,12 @@ const { getAuthHeader } = useAdminAuth()
       @update:sort="handleSort"
     >
       <template #empty-action>
-        <!-- <UiButton @click="showCreateModal = true">
+        <UiButton @click="showCreateModal = true">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           Create Key
-        </UiButton> -->
+        </UiButton>
       </template>
       <template #userId="{ value }">
         <code class="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 font-mono text-xs text-indigo-600 dark:text-indigo-400 font-semibold">{{ value }}</code>
@@ -501,14 +509,17 @@ const { getAuthHeader } = useAdminAuth()
       <form @submit.prevent="handleCreateKey" class="space-y-5">
         <div>
           <label class="block text-xs font-semibold text-[rgb(var(--text-secondary))] mb-1.5">User</label>
-          <select v-model="newKey.userId" class="input" required>
+          <select v-model="newKey.userId" class="input" required :disabled="usersWithoutKey.length === 0">
             <option value="">Select a user...</option>
-            <option v-for="user in users" :key="user.userId" :value="user.userId">
+            <option v-for="user in usersWithoutKey" :key="user.userId" :value="user.userId">
               {{ user.name }} ({{ user.email }}) - {{ user.userId }}
             </option>
           </select>
-          <p class="text-xs text-[rgb(var(--text-secondary))] mt-1.5">
-            A UserKey entity is automatically created when a user is created. This will link a new API key to that UserKey.
+          <p v-if="usersWithoutKey.length === 0" class="text-xs text-[rgb(var(--text-muted))] mt-1.5">
+            All users already have an API key.
+          </p>
+          <p v-else class="text-xs text-[rgb(var(--text-secondary))] mt-1.5">
+            Only users without an API key are listed. One key per user.
           </p>
         </div>
         
@@ -516,7 +527,7 @@ const { getAuthHeader } = useAdminAuth()
           <UiButton type="button" variant="outline" @click="showCreateModal = false">
             Cancel
           </UiButton>
-          <UiButton type="submit" :loading="isCreating">
+          <UiButton type="submit" :loading="isCreating" :disabled="usersWithoutKey.length === 0">
             Create Key
           </UiButton>
         </div>
@@ -533,7 +544,7 @@ const { getAuthHeader } = useAdminAuth()
             <option value="revoked">Revoked</option>
           </select>
           <p class="text-xs text-[rgb(var(--text-secondary))] mt-1.5">
-            Only the status can be changed. User attributes (department, isAgent, limitRequestsPerMinute) are managed in the User entity.
+            Only the status can be changed. User attributes (group, isAgent, limitRequestsPerMinute) are managed in the User entity.
           </p>
         </div>
         
@@ -578,13 +589,14 @@ const { getAuthHeader } = useAdminAuth()
     <!-- Generated Key Modal -->
     <UiModal v-model="showKeyModal" title="API Key" :closable="false">
       <div class="space-y-5">
-        <div class="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800">
+        <div class="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800">
           <div class="flex items-start gap-3">
-            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <svg class="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <!-- <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /> -->
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
-            <p class="text-sm font-medium text-amber-700 dark:text-amber-300">
-              Save this key now — it won't be shown again!
+            <p class="text-sm font-medium text-green-700 dark:text-green-300">
+              {{ isKeyRotated ? 'API key rotated successfully' : 'API key created successfully' }}
             </p>
           </div>
         </div>

@@ -20,7 +20,7 @@ COPY packages/proxy ./packages/proxy
 COPY packages/ui ./packages/ui
 
 # Build proxy (which builds UI and copies it)
-RUN npm run build:proxy
+RUN npm run build --workspace=packages/proxy
 
 # Stage 2: Runtime
 FROM node:20-alpine

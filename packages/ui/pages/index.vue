@@ -67,7 +67,7 @@ const fetchRecentActivity = async () => {
         model: log.model || 'N/A',
         provider: log.provider || 'N/A',
         decision: log.decision === 'permit' ? 'Allow' : 'Deny',
-        cost: log.cost_tracking_id ? 0 : 0
+        cost: log.spend ?? 0
       }))
     }
   } catch (error) {
@@ -391,7 +391,10 @@ const activityColumns = [
     <div class="card">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-sm font-bold text-[rgb(var(--text))]">Recent Activity</h2>
-        <span class="badge badge-neutral">Last 10 requests</span>
+        <div class="flex items-center gap-3">
+          <span class="badge badge-neutral">Last 10 requests</span>
+          <NuxtLink to="/logs" class="text-sm font-medium text-[rgb(var(--primary))] hover:underline">View all logs</NuxtLink>
+        </div>
       </div>
       <div v-if="isLoading" class="space-y-2">
         <UiLoadingSkeleton :lines="5" height="h-12" />

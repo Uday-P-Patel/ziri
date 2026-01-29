@@ -1,10 +1,10 @@
- 
+
+import { getAuthHeader } from '../../utils/auth'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const proxyUrl = config.public.proxyUrl || 'http://localhost:3100'
-  const authHeader = getHeader(event, 'authorization') || getHeader(event, 'x-root-key')
-  const body = await readBody(event)
+  const authHeader = getAuthHeader(event)
   
   if (!authHeader) {
     throw createError({
@@ -13,20 +13,12 @@ export default defineEventHandler(async (event) => {
     })
   }
   
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json'
-  }
-  if (authHeader.startsWith('Bearer ')) {
-    headers['Authorization'] = authHeader
-  } else {
-    headers['X-Root-Key'] = authHeader
-  }
-  
   try {
-    const response = await fetch(`${proxyUrl}/api/keys`, {
+    const response = await fetch(`${proxyUrl}/api/me/rotate`, {
       method: 'POST',
-      headers,
-      body: JSON.stringify(body)
+      headers: {
+        'Authorization': authHeader.startsWith('Bearer ') ? authHeader : `Bearer ${authHeader}`
+      }
     })
     
     if (!response.ok) {
@@ -44,7 +36,7 @@ export default defineEventHandler(async (event) => {
     }
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to proxy request: ${error.message}`
+      statusMessage: `Failed to rotate key: ${error.message}`
     })
   }
 })

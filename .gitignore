@@ -86,5 +86,9 @@ RATE_LIMITING_QUEUEING_PLAN.md
 # Cursor rules
 .cursor/rules/
 
+# scripts
+**/scripts/drop-tables.js
+
 # Docs
-docs/.vitepress/cache/
+docs/
+FLOWS.md

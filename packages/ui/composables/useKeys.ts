@@ -15,7 +15,7 @@ export function useKeys() {
         const userEntityRef = entity.attrs.user && (entity.attrs.user as any).__entity ? (entity.attrs.user as any).__entity : null
         const userId = userEntityRef ? userEntityRef.id : (entity.attrs as any).user_id || ''
         
-        const apiKey = entity.apiKey || `sk-zs-${userId}-...`
+        const apiKey = entity.apiKey || `ziri-${userId}-...`
         
         let userEntity: Entity | null = null
         if (allEntities && userEntityRef) {
@@ -27,7 +27,7 @@ export function useKeys() {
         
         const name = userEntity ? (userEntity.attrs as any).name || '' : ''
         const email = userEntity ? (userEntity.attrs as any).email || '' : ''
-        const department = userEntity ? (userEntity.attrs as any).department || '' : ''
+        const group = userEntity ? (userEntity.attrs as any).group || '' : ''
         const isAgent = userEntity ? (userEntity.attrs as any).is_agent || false : false
         const limitRequestsPerMinute = userEntity ? (userEntity.attrs as any).limit_requests_per_minute || 0 : 0
         
@@ -37,7 +37,7 @@ export function useKeys() {
             executionKey: (entity as any).executionKey || undefined,
             name: name,
             email: email,
-            department: department,
+            group: group,
             isAgent: isAgent,
             limitRequestsPerMinute: limitRequestsPerMinute,
             apiKey: apiKey,

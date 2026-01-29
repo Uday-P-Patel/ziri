@@ -1,7 +1,7 @@
  
 
 import jwt from 'jsonwebtoken'
-import { getMasterKey } from './master-key.js'
+import { getRootKey } from './root-key.js'
 import { createHash } from 'crypto'
 
 const JWT_SECRET_KEY = 'jwt-secret'
@@ -18,12 +18,11 @@ export interface TokenPayload {
  
 function getJwtSecret(): string {
  
-  const masterKey = getMasterKey()
-  if (!masterKey) {
-    throw new Error('Master key not found')
+  const rootKey = getRootKey()
+  if (!rootKey) {
+    throw new Error('Root key not found')
   }
- 
-  return createHash('sha256').update(masterKey + JWT_SECRET_KEY).digest('hex')
+  return createHash('sha256').update(rootKey + JWT_SECRET_KEY).digest('hex')
 }
 
  

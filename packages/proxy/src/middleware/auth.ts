@@ -2,7 +2,7 @@
 
 import type { Request, Response, NextFunction } from 'express'
 import { verifyAccessToken } from '../utils/jwt.js'
-import { getMasterKey } from '../utils/master-key.js'
+import { getRootKey } from '../utils/root-key.js'
 
 export interface AdminRequest extends Request {
   admin?: {
@@ -38,13 +38,13 @@ export function requireAdmin(
   }
   
  
-  const masterKey = req.headers['x-master-key'] as string
-  if (masterKey) {
-    const expectedKey = getMasterKey()
-    if (expectedKey && masterKey === expectedKey) {
+  const rootKeyHeader = req.headers['x-root-key'] as string
+  if (rootKeyHeader) {
+    const expectedKey = getRootKey()
+    if (expectedKey && rootKeyHeader === expectedKey) {
       req.admin = {
-        userId: 'admin',
-        email: 'admin@ziri.local',
+        userId: 'ziri',
+        email: 'ziri@ziri.local',
         role: 'admin',
         name: 'Administrator'
       }
@@ -59,7 +59,7 @@ export function requireAdmin(
   })
 }
 
-export function requireMasterKey(
+export function requireRootKey(
   req: Request,
   res: Response,
   next: NextFunction

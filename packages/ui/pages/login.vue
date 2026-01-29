@@ -112,7 +112,7 @@
                   Login Credentials
                 </div>
                 <div class="text-xs text-[rgb(var(--text-secondary))] text-center space-y-1 font-medium">
-                  <p><strong>Admin:</strong> Username: <span class="text-[rgb(var(--primary))] font-bold">admin</span>, Password: <span class="italic text-[rgb(var(--text-muted))]">Your master key</span></p>
+                  <p><strong>Admin:</strong> Username: <span class="text-[rgb(var(--primary))] font-bold">ziri</span>, Password: <span class="italic text-[rgb(var(--text-muted))]">Your root key</span></p>
                   <p><strong>User:</strong> User ID: <span class="text-[rgb(var(--primary))] font-bold">user-xxx</span>, Password: <span class="italic text-[rgb(var(--text-muted))]">Provided by administrator</span></p>
                 </div>
               </div> -->

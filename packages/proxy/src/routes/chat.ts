@@ -45,7 +45,9 @@ router.post('/completions', async (req: Request, res: Response) => {
   let auditLogId: number | null = null
   let userKeyId: string | null = null
   let slotAcquired = false
-  
+  let costReserved = false
+  let reservedAmount = 0
+
   try {
     requestId = auditLogService.generateRequestId()
     
@@ -121,7 +123,17 @@ router.post('/completions', async (req: Request, res: Response) => {
       })
       return
     }
-    
+
+    const keyStatus = (userKeyEntity.attrs as any).status
+    if (keyStatus === 'revoked' || keyStatus === 'disabled' || keyStatus === 2) {
+      res.status(403).json({
+        error: keyStatus === 'revoked' ? 'API key has been revoked' : 'API key is disabled',
+        code: 'API_KEY_REVOKED_OR_DISABLED',
+        requestId
+      })
+      return
+    }
+
     const { provider, model, messages, ...otherParams } = req.body
     
     if (!provider || !model || !messages) {
@@ -225,8 +237,8 @@ router.post('/completions', async (req: Request, res: Response) => {
       userKeyId,
       costEstimate.estimatedCost
     )
-    
-    let costReserved = true
+    costReserved = true
+    reservedAmount = costEstimate.estimatedCost
     
     const principal = `UserKey::"${userKeyId}"`
     const action = 'Action::"completion"'
@@ -329,6 +341,10 @@ router.post('/completions', async (req: Request, res: Response) => {
         ...otherParams
       })
     } catch (llmError: any) {
+      if (costReserved && userKeyId) {
+        await spendReservationService.releaseReservedSpend(userKeyId, reservedAmount)
+        costReserved = false
+      }
       if (slotAcquired) {
         queueManagerService.releaseSlot(userKeyId, requestId)
         slotAcquired = false
@@ -406,14 +422,19 @@ router.post('/completions', async (req: Request, res: Response) => {
       },
     })
   } catch (error: any) {
+    if (requestId && userKeyId && costReserved) {
+      try {
+        await spendReservationService.releaseReservedSpend(userKeyId, reservedAmount)
+      } catch {
+      }
+    }
     if (requestId && slotAcquired) {
       try {
-        const userKeyId = await keyService.getUserKeyIdForUser(extractUserIdFromApiKey(req.headers['x-api-key'] as string) || '')
-        if (userKeyId) {
-          queueManagerService.releaseSlot(userKeyId, requestId)
+        const uid = userKeyId || await keyService.getUserKeyIdForUser(extractUserIdFromApiKey(req.headers['x-api-key'] as string) || '')
+        if (uid) {
+          queueManagerService.releaseSlot(uid, requestId)
         }
       } catch {
- 
       }
     }
     

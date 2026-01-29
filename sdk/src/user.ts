@@ -33,18 +33,18 @@ export class UserSDK {
   }
 
   private validateApiKey(apiKey: string): void {
-    if (!apiKey.startsWith('sk-zs-')) {
-      throw new Error('Invalid API key format. Expected format: sk-zs-{userId}-{hash}')
+    if (!apiKey.startsWith('ziri-')) {
+      throw new Error('Invalid API key format. Expected format: ziri-{userId}-{hash}')
     }
   }
 
   private extractUserId(apiKey: string): string {
- 
-    const parts = apiKey.substring(6).split('-')
-    if (parts.length < 2) {
+    const withoutPrefix = apiKey.substring(5)
+    const lastHyphen = withoutPrefix.lastIndexOf('-')
+    if (lastHyphen === -1 || lastHyphen === 0) {
       throw new Error('Invalid API key format')
     }
-    return parts[0]
+    return withoutPrefix.substring(0, lastHyphen)
   }
 
 

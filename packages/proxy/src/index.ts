@@ -1,6 +1,6 @@
  
 
-import { initializeMasterKey } from './utils/master-key.js'
+import { initializeRootKey } from './utils/root-key.js'
 import { initializeEncryptionKey } from './utils/encryption-key.js'
 import { getDatabase, closeDatabase } from './db/index.js'
 import { loadConfig } from './config.js'
@@ -9,7 +9,7 @@ import { serviceFactory } from './services/service-factory.js'
 import { seedDefaults } from './db/seed.js'
 
  
-const masterKey = initializeMasterKey()
+const rootKey = initializeRootKey()
 
  
 const encryptionKey = initializeEncryptionKey()
@@ -97,4 +97,4 @@ process.on('SIGTERM', async () => {
 })
 
  
-export { config, masterKey }
+export { config, rootKey }

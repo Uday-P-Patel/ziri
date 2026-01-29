@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatDateShort } from '~/utils/formatters'
+import { formatDateShort, formatCurrency } from '~/utils/formatters'
 import { useUnifiedAuth } from '~/composables/useUnifiedAuth'
 import { useRealtimeUpdates } from '~/composables/useRealtimeUpdates'
 import { useDebounce } from '~/composables/useDebounce'
@@ -138,27 +138,6 @@ const { isConnected, error: sseError } = useRealtimeUpdates({
   }
 })
 
-const getCostForLog = async (requestId: string) => {
-  try {
-    const authHeader = getAuthHeader()
-    if (!authHeader) return 0
-
-    const response = await fetch(`/api/costs/summary?requestId=${requestId}`, {
-      headers: {
-        'Authorization': authHeader
-      }
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      return data.data?.[0]?.total_cost || 0
-    }
-  } catch (error) {
- 
-  }
-  return 0
-}
-
 const uniqueProviders = computed(() => {
   return [...new Set(allLogs.value.map(log => log.provider).filter(Boolean))].sort()
 })
@@ -185,7 +164,7 @@ const columns = [
   { key: 'decision', header: 'Decision', class: 'w-24', sortable: true },
   { key: 'auth_duration_ms', header: 'Duration', class: 'w-28', sortable: true },
   { key: 'provider', header: 'Provider', class: 'w-24', sortable: true },
-  { key: 'actions', header: '', class: 'w-20' }
+  { key: 'spend', header: 'Cost', class: 'w-28' }
 ]
 
 onMounted(() => {
@@ -292,17 +271,8 @@ onMounted(() => {
         <span class="text-sm text-[rgb(var(--text-secondary))]">{{ value || 'N/A' }}</span>
       </template>
 
-      <template #actions="{ row }">
-        <button 
-          @click="() => {}"
-          class="icon-btn text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))]"
-          title="View details"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-        </button>
+      <template #spend="{ row }">
+        <span class="font-mono font-medium">{{ formatCurrency(row.spend ?? 0) }}</span>
       </template>
     </UiTable>
 

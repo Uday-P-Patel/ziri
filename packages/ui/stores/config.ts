@@ -70,7 +70,7 @@ export const useConfigStore = defineStore('config', {
                         proxyUrl: config.proxyUrl || '',
                         port: config.port || config.server?.port || 3100,
                         logLevel: config.logLevel || 'info',
-                        masterKey: config.masterKey || ''
+                        rootKey: config.rootKey || ''
                     }
                     this.$patch(uiConfig)
  
@@ -107,7 +107,7 @@ export const useConfigStore = defineStore('config', {
                         proxyUrl: parsed.proxyUrl || '',
                         port: parsed.port || parsed.server?.port || 3100,
                         logLevel: parsed.logLevel || 'info',
-                        masterKey: parsed.masterKey || ''
+                        rootKey: parsed.rootKey || ''
                     })
                 } catch (e) {
  
@@ -147,7 +147,7 @@ export const useConfigStore = defineStore('config', {
                 proxyUrl: this.proxyUrl || '',
                 port: this.port || this.server?.port || 3100,
                 logLevel: this.logLevel || 'info',
-                masterKey: this.masterKey
+                rootKey: this.rootKey
             }
             setCookie(STORAGE_KEY, JSON.stringify(stateToSave), 365)
 

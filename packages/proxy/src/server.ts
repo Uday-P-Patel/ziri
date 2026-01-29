@@ -8,7 +8,7 @@ import { errorHandler, notFoundHandler } from './middleware/error-handler.js'
 import { findFreePort } from './utils/port-finder.js'
 import { loadConfig } from './config.js'
 import { initializeEncryptionKey } from './utils/encryption-key.js'
-import { initializeMasterKey } from './utils/master-key.js'
+import { initializeRootKey } from './utils/root-key.js'
 import { getDatabase } from './db/index.js'
 import { serviceFactory } from './services/service-factory.js'
 import { initializeServerSession, getServerSessionId } from './utils/server-session.js'
@@ -129,14 +129,20 @@ export async function createServer(): Promise<Express> {
 
 let initialized = false
 
-function ensureInitialization() {
+async function ensureInitialization() {
   if (initialized) return
   
+  initializeRootKey()
   initializeEncryptionKey()
   getDatabase()
   serviceFactory.initialize()
   const sessionId = initializeServerSession()
   console.log(`[PROXY] Server session initialized: ${sessionId}`)
+  
+  const { initializeAdminUser } = await import('./db/index.js')
+  await initializeAdminUser().catch((error) => {
+    console.warn('[PROXY] Failed to initialize admin user:', error)
+  })
   
   const config = loadConfig()
   if (config.mode === 'local') {
@@ -153,7 +159,7 @@ function ensureInitialization() {
 }
 
 export async function startServer(): Promise<{ port: number; url: string }> {
-  ensureInitialization()
+  await ensureInitialization()
   
   const app = await createServer()
   const config = loadConfig()

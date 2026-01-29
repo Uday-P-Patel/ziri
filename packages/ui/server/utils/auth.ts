@@ -1,7 +1,7 @@
  
 
 export function getAuthHeader(event: any): string | null {
-  const authHeader = getHeader(event, 'authorization') || getHeader(event, 'x-master-key')
+  const authHeader = getHeader(event, 'authorization') || getHeader(event, 'x-root-key')
   return authHeader || null
 }
 
@@ -10,12 +10,11 @@ export function getAuthHeaders(event: any): Record<string, string> {
   if (!authHeader) {
     return {}
   }
-  
   const headers: Record<string, string> = {}
   if (authHeader.startsWith('Bearer ')) {
     headers['Authorization'] = authHeader
   } else {
-    headers['X-Master-Key'] = authHeader
+    headers['X-Root-Key'] = authHeader
   }
   return headers
 }

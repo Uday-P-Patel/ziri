@@ -3,7 +3,7 @@
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const proxyUrl = config.public.proxyUrl || 'http://localhost:3100'
-  const authHeader = getHeader(event, 'authorization') || getHeader(event, 'x-master-key')
+  const authHeader = getHeader(event, 'authorization') || getHeader(event, 'x-root-key')
   
   if (!authHeader) {
     throw createError({
@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   if (authHeader.startsWith('Bearer ')) {
     headers['Authorization'] = authHeader
   } else {
-    headers['X-Master-Key'] = authHeader
+    headers['X-Root-Key'] = authHeader
   }
   
   const body = await readBody(event)

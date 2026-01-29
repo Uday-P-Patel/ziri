@@ -25,7 +25,7 @@ You run the proxy wherever you like (laptop, VM, container host), then share its
 At a high level:
 
 1. **Run the proxy** using the official Docker image (usually via Docker Compose)
-2. **Log in to the admin UI** with the master key printed in the logs
+2. **Log in to the admin UI** with the root key (written to `.ziri-root-key` in the config directory; not printed to logs)
 3. **Configure a provider** (e.g., OpenAI API key)
 4. **Create a user**, which automatically gets an API key
 5. **Give the API key and proxy URL** to your application or team
@@ -65,19 +65,15 @@ Start the proxy:
 docker compose up -d
 ```
 
-View logs and capture the master key:
+The root key is written to `.ziri-root-key` in the config directory (e.g. `/data/.ziri-root-key` when using the default volume). It is not printed to logs. To use a fixed key, set `ZIRI_ROOT_KEY` in the environment.
+
+To start completely fresh (wipe database and optionally the root key), from the repo root run:
 
 ```bash
-docker compose logs | grep "MASTER KEY"
+cd packages/proxy && node scripts/drop-tables.js
 ```
 
-You should see a line like:
-
-```text
-Master Key: a751bf51140e64f315c8bf6f643c643a59aeba54e506c04cccfca6105f15198e
-```
-
-Save this key; it is your initial admin password.
+Add `--reset-root-key` to also remove `.ziri-root-key` so a new root key is generated on next start. Then start the proxy again.
 
 ### Accessing the Admin UI
 
@@ -86,8 +82,8 @@ Open the UI in your browser:
 - URL: `http://localhost:3100`
 
 Log in with:
-- **Username/Email**: `admin` or `admin@ziri.local`
-- **Password**: the master key from the logs
+- **Username/Email**: `ziri` or `ziri@ziri.local`
+- **Password**: the root key from `.ziri-root-key` (or the value of `ZIRI_ROOT_KEY`)
 
 From the UI you can:
 - Add LLM providers (OpenAI, Anthropic, etc.)
@@ -192,7 +188,7 @@ You can also call embeddings and image generation through the SDK. See the SDK d
 ## Configuration Overview
 
 The proxy is configured via:
-- Environment variables (e.g., `CONFIG_DIR`, `PORT`, `HOST`, `ZIRI_MASTER_KEY`)
+- Environment variables (e.g., `CONFIG_DIR`, `PORT`, `HOST`, `ZIRI_ROOT_KEY`)
 - A `config.json` file stored in the config directory (inside the Docker volume by default)
 
 Common patterns:
@@ -202,7 +198,7 @@ Common patterns:
 
   ```bash
   # .env
-  MASTER_KEY=your-master-key
+  ROOT_KEY=your-root-key
   ENCRYPTION_KEY=your-encryption-key
   ```
 
@@ -211,7 +207,7 @@ Common patterns:
     - CONFIG_DIR=/data
     - PORT=3100
     - HOST=0.0.0.0
-    - ZIRI_MASTER_KEY=${MASTER_KEY}
+    - ZIRI_ROOT_KEY=${ROOT_KEY}
     - ZIRI_ENCRYPTION_KEY=${ENCRYPTION_KEY}
   ```
 

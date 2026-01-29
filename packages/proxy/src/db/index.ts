@@ -92,6 +92,19 @@ async function initializeSchema(database: Database.Database): Promise<void> {
       throw error
     }
   }
+
+  try {
+    const { up: migrationUp } = await import('./migrations/006_dept_to_group.js')
+    migrationUp(database)
+    console.log('[DB] ✅ Migration 006 applied: dept_to_group')
+  } catch (error: any) {
+    if (error.message?.includes('Cannot find module')) {
+      console.warn('[DB] Migration 006: module not found')
+    } else {
+      console.error('[DB] Migration 006 failed:', error.message)
+      throw error
+    }
+  }
   
   const schemasToApply = ALL_SCHEMAS.filter(schema => !schema.includes('CREATE TABLE IF NOT EXISTS audit_logs'))
   
@@ -126,20 +139,24 @@ export function closeDatabase(): void {
 }
 
 export async function initializeAdminUser(): Promise<void> {
+  console.log('[DB] initializeAdminUser() called')
   const db = getDatabase()
-  const { getMasterKey } = await import('../utils/master-key.js')
+  const { getRootKey } = await import('../utils/root-key.js')
   const { hashPassword } = await import('../utils/password.js')
   const { encrypt, hash: hashEmail } = await import('../utils/encryption.js')
   
-  const masterKey = getMasterKey()
-  if (!masterKey) {
-    console.warn('[DB] Master key not found, skipping admin user initialization')
+  const rootKey = getRootKey()
+  console.log(`[DB] Root key retrieved: ${!!rootKey}, length: ${rootKey?.length || 0}`)
+  if (!rootKey) {
+    console.error('[DB] ✗ Root key not found, skipping admin user initialization')
     return
   }
   
-  const adminEmail = 'admin@ziri.local'
-  const adminId = 'admin'
-  const masterKeyHash = await hashPassword(masterKey)
+  const adminEmail = 'ziri@ziri.local'
+  const adminId = 'ziri'
+  console.log(`[DB] Hashing root key for admin user...`)
+  const rootKeyHash = await hashPassword(rootKey)
+  console.log(`[DB] Root key hashed successfully`)
   
   const adminUser = db.prepare('SELECT * FROM auth WHERE id = ?').get(adminId) as any
   
@@ -147,28 +164,31 @@ export async function initializeAdminUser(): Promise<void> {
   const emailHash = hashEmail(adminEmail)
   
   if (!adminUser) {
+    console.log(`[DB] Creating new admin user: ${adminId}`)
     db.prepare(`
-      INSERT INTO auth (id, email, email_hash, name, password, dept, is_agent, status)
+      INSERT INTO auth (id, email, email_hash, name, password, "group", is_agent, status)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       adminId,
       encryptedEmail,
       emailHash,
       'Administrator',
-      masterKeyHash,
+      rootKeyHash,
       null,
       0,
       1
     )
-    console.log('[DB] ✅ Admin user created with master key as password')
+    console.log('[DB] ✓ Admin user ziri created with root key as password')
   } else {
+    console.log(`[DB] Admin user exists, updating password hash...`)
     db.prepare(`
       UPDATE auth 
       SET email = ?, email_hash = ?, password = ?, status = 1, updated_at = datetime('now')
       WHERE id = ?
-    `).run(encryptedEmail, emailHash, masterKeyHash, adminId)
-    console.log('[DB] ✅ Admin user password updated to match current master key')
+    `).run(encryptedEmail, emailHash, rootKeyHash, adminId)
+    console.log('[DB] ✓ Admin user ziri password updated to match current root key')
   }
+  console.log(`[DB] Admin user initialization complete`)
 }
 
 export { DB_PATH }

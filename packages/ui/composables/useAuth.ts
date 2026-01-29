@@ -27,7 +27,8 @@ export function useAuth() {
  
       
  
-      if (username === 'admin') {
+      const isAdminUsername = username === 'admin' || username === 'ziri' || username === 'ziri@ziri.local'
+      if (isAdminUsername) {
         try {
           const adminResponse = await fetch('/api/auth/admin/login', {
             method: 'POST',

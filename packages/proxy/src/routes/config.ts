@@ -2,7 +2,7 @@
 
 import { Router, type Request, type Response } from 'express'
 import { loadConfig } from '../config.js'
-import { getMasterKey } from '../utils/master-key.js'
+import { getRootKey } from '../utils/root-key.js'
 import { requireAdmin } from '../middleware/auth.js'
 import { writeConfig } from '../config/index.js'
 
@@ -24,7 +24,7 @@ router.get('/', (req: Request, res: Response) => {
       publicUrl: config.publicUrl,
       email: config.email,
       logLevel: config.logLevel,
-      masterKey: config.masterKey
+      rootKey: config.rootKey
     })
   } catch (error: any) {
     res.status(500).json({

@@ -92,6 +92,36 @@ export class SpendReservationService {
       currentMonthlySpendFullPrecision,
     }
   }
+
+  async releaseReservedSpend(userKeyId: string, amountToRelease: number): Promise<void> {
+    if (amountToRelease <= 0) return
+    const entityStmt = this.db.prepare(`
+      SELECT ejson FROM entities WHERE etype = 'UserKey' AND eid = ?
+    `)
+    const row = entityStmt.get(userKeyId) as { ejson: string } | undefined
+    if (!row) return
+    const entity: UserKeyEntity = JSON.parse(row.ejson)
+    const currentDaily = this.parseDecimal(entity.attrs.current_daily_spend)
+    const currentMonthly = this.parseDecimal(entity.attrs.current_monthly_spend)
+    const newDaily = Math.max(0, currentDaily - amountToRelease)
+    const newMonthly = Math.max(0, currentMonthly - amountToRelease)
+    const createDecimalValue = (value: string): CedarDecimalValue => ({
+      __extn: { fn: 'decimal', arg: value },
+    })
+    const toFour = (value: number) => createDecimalValue(value.toFixed(4))
+    const updatedEntity: UserKeyEntity = {
+      ...entity,
+      attrs: {
+        ...entity.attrs,
+        current_daily_spend: toFour(newDaily),
+        current_monthly_spend: toFour(newMonthly),
+      },
+    }
+    this.db.prepare(`
+      UPDATE entities SET ejson = ?, updated_at = datetime('now')
+      WHERE etype = 'UserKey' AND eid = ?
+    `).run(JSON.stringify(updatedEntity), userKeyId)
+  }
 }
 
 export const spendReservationService = new SpendReservationService()

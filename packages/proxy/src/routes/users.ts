@@ -68,22 +68,28 @@ router.get('/:userId', (req: Request, res: Response) => {
  
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { email, name, department, isAgent, limitRequestsPerMinute } = req.body
+    const { email, name, group, isAgent, limitRequestsPerMinute, createApiKey } = req.body
     
-    if (!email || !name || !department) {
+    console.log(`[USERS] Create user request - createApiKey value:`, createApiKey, `type:`, typeof createApiKey)
+    
+    if (!email || !name) {
       res.status(400).json({
-        error: 'email, name, and department are required',
+        error: 'email and name are required',
         code: 'MISSING_FIELDS'
       })
       return
     }
     
+    const shouldCreateApiKey = createApiKey === true || createApiKey === 'true'
+    console.log(`[USERS] Should create API key:`, shouldCreateApiKey)
+    
     const result = await userService.createUser({ 
       email, 
       name, 
-      department,
+      group,
       isAgent: isAgent ?? false,
-      limitRequestsPerMinute: limitRequestsPerMinute || 100
+      limitRequestsPerMinute: limitRequestsPerMinute || 100,
+      createApiKey: shouldCreateApiKey
     })
     
     if (result.emailSent) {

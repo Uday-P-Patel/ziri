@@ -4,7 +4,7 @@
 import { Router, type Request, type Response } from 'express'
 import { getDatabase } from '../db/index.js'
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, hashRefreshToken, type TokenPayload } from '../utils/jwt.js'
-import { getMasterKey } from '../utils/master-key.js'
+import { getRootKey } from '../utils/root-key.js'
 import { decrypt, hash as hashEmail } from '../utils/encryption.js'
 import bcrypt from 'bcrypt'
 
@@ -40,7 +40,7 @@ router.post('/admin/login', async (req: Request, res: Response) => {
     
  
  
-    if (user && user.id === 'admin') {
+    if (user && user.id === 'ziri') {
  
       if (user.status !== 1) {
         res.status(403).json({
@@ -110,44 +110,52 @@ router.post('/admin/login', async (req: Request, res: Response) => {
     
  
  
-    if (identifier === 'admin') {
-      const masterKey = getMasterKey()
-      if (masterKey && password === masterKey) {
- 
+    if (identifier === 'ziri') {
+      const rootKey = getRootKey()
+      console.log(`[AUTH] Login attempt for ziri`)
+      console.log(`[AUTH] Root key available: ${!!rootKey}`)
+      console.log(`[AUTH] Root key length: ${rootKey?.length || 0}`)
+      console.log(`[AUTH] Password length: ${password?.length || 0}`)
+      console.log(`[AUTH] Password match: ${rootKey && password === rootKey}`)
+      if (rootKey && password === rootKey) {
         const tokenPayload: TokenPayload = {
-          userId: 'admin',
-          email: 'admin@ziri.local',
+          userId: 'ziri',
+          email: 'ziri@ziri.local',
           role: 'admin',
           name: 'Administrator'
         }
-        
         const accessToken = generateAccessToken(tokenPayload)
         const refreshToken = generateRefreshToken(tokenPayload)
-        
- 
         const tokenHash = hashRefreshToken(refreshToken)
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         const absoluteExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         const deviceId = req.body.deviceId || null
-        
         db.prepare(`
           INSERT INTO refresh_tokens (auth_id, token_hash, expires_at, absolute_expires_at, device_id)
           VALUES (?, ?, ?, ?, ?)
-        `).run('admin', tokenHash, expiresAt.toISOString(), absoluteExpiresAt.toISOString(), deviceId)
-        
+        `).run('ziri', tokenHash, expiresAt.toISOString(), absoluteExpiresAt.toISOString(), deviceId)
         res.json({
           accessToken,
           refreshToken,
           expiresIn: 3600,
           tokenType: 'Bearer',
           user: {
-            userId: 'admin',
-            email: 'admin@ziri.local',
+            userId: 'ziri',
+            email: 'ziri@ziri.local',
             role: 'admin',
             name: 'Administrator'
           }
         })
         return
+      } else {
+        console.log(`[AUTH] Root key authentication failed for ziri`)
+        if (!rootKey) {
+          console.error(`[AUTH] Root key is null or undefined`)
+        } else if (password !== rootKey) {
+          console.error(`[AUTH] Password does not match root key`)
+          console.error(`[AUTH] Expected key (first 8): ${rootKey.substring(0, 8)}...`)
+          console.error(`[AUTH] Provided password (first 8): ${password?.substring(0, 8)}...`)
+        }
       }
     }
     

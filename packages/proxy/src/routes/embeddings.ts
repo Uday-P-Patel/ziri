@@ -22,6 +22,8 @@ router.post('/', async (req: Request, res: Response) => {
   let auditLogId: number | null = null
   let userKeyId: string | null = null
   let slotAcquired = false
+  let costReserved = false
+  let reservedAmount = 0
 
   try {
     requestId = auditLogService.generateRequestId()
@@ -93,6 +95,16 @@ router.post('/', async (req: Request, res: Response) => {
       res.status(403).json({
         error: 'UserKey entity not found',
         code: 'USER_KEY_NOT_FOUND',
+        requestId
+      })
+      return
+    }
+
+    const keyStatus = (userKeyEntity.attrs as any).status
+    if (keyStatus === 'revoked' || keyStatus === 'disabled' || keyStatus === 2) {
+      res.status(403).json({
+        error: keyStatus === 'revoked' ? 'API key has been revoked' : 'API key is disabled',
+        code: 'API_KEY_REVOKED_OR_DISABLED',
         requestId
       })
       return
@@ -215,6 +227,8 @@ router.post('/', async (req: Request, res: Response) => {
       userKeyId,
       costEstimate.estimatedCost
     )
+    costReserved = true
+    reservedAmount = costEstimate.estimatedCost
 
     const principal = `UserKey::"${userKeyId}"`
     const action = 'Action::"embedding"'
@@ -294,6 +308,10 @@ router.post('/', async (req: Request, res: Response) => {
     })
 
     if (authResult.decision !== 'Allow') {
+      if (costReserved && userKeyId) {
+        await spendReservationService.releaseReservedSpend(userKeyId, reservedAmount)
+        costReserved = false
+      }
       if (slotAcquired) {
         queueManagerService.releaseSlot(userKeyId, requestId)
         slotAcquired = false
@@ -317,6 +335,10 @@ router.post('/', async (req: Request, res: Response) => {
         ...otherParams
       })
     } catch (llmError: any) {
+      if (costReserved && userKeyId) {
+        await spendReservationService.releaseReservedSpend(userKeyId, reservedAmount)
+        costReserved = false
+      }
       if (slotAcquired) {
         queueManagerService.releaseSlot(userKeyId, requestId)
         slotAcquired = false
@@ -400,6 +422,12 @@ router.post('/', async (req: Request, res: Response) => {
       },
     })
   } catch (error: any) {
+    if (requestId && userKeyId && costReserved) {
+      try {
+        await spendReservationService.releaseReservedSpend(userKeyId, reservedAmount)
+      } catch {
+      }
+    }
     if (requestId && slotAcquired && userKeyId) {
       try {
         queueManagerService.releaseSlot(userKeyId, requestId)
