@@ -1,33 +1,60 @@
+import { getAuthHeader } from '../utils/auth'
+
 export default defineEventHandler(async (event) => {
   try {
     const configRuntime = useRuntimeConfig()
     const proxyUrl = configRuntime.public.proxyUrl || 'http://localhost:3100'
     
+    const authHeader = getAuthHeader(event)
+    if (!authHeader) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Authentication required to access configuration'
+      })
+    }
+    
     try {
-      const response = await fetch(`${proxyUrl}/api/config`)
+      const headers: Record<string, string> = {}
+      if (authHeader.startsWith('Bearer ')) {
+        headers['Authorization'] = authHeader
+      } else {
+        headers['X-Root-Key'] = authHeader
+      }
+      
+      const response = await fetch(`${proxyUrl}/api/config`, {
+        headers
+      })
+      
+      if (response.status === 401 || response.status === 403) {
+        throw createError({
+          statusCode: response.status,
+          statusMessage: 'Unauthorized to access configuration'
+        })
+      }
+      
       if (response.ok) {
         const proxyConfig = await response.json()
         return proxyConfig
       }
-    } catch (e) {
+      
+      throw createError({
+        statusCode: response.status,
+        statusMessage: `Failed to fetch config: ${response.statusText}`
+      })
+    } catch (e: any) {
+      if (e.statusCode) {
+        throw e
+      }
       console.warn('[API] Failed to fetch config from proxy:', e)
-    }
-    
-    return {
-      mode: 'local',
-      server: {
-        host: '127.0.0.1',
-        port: 3100
-      },
-      publicUrl: '',
-      email: {
-        enabled: false,
-        provider: 'manual'
-      },
-      logLevel: 'info',
-      rootKey: ''
+      throw createError({
+        statusCode: 500,
+        statusMessage: `Failed to fetch config from proxy: ${e.message}`
+      })
     }
   } catch (error: any) {
+    if (error.statusCode) {
+      throw error
+    }
     console.error('[API] Error reading config:', error)
     throw createError({
       statusCode: 500,

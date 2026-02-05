@@ -14,7 +14,6 @@ const { listKeys } = useKeys()
 const { checkAction } = useInternalAuth()
 
 const isSaving = ref(false)
-const showRootKey = ref(false)
 const permissionsLoading = ref(true)
 const canUpdateConfig = ref(false)
 
@@ -71,9 +70,6 @@ onMounted(async () => {
         from: ''
       }
       form.logLevel = config.logLevel || 'info'
-      if (config.rootKey) {
-        configStore.rootKey = config.rootKey
-      }
     } else {
  
       form.mode = 'local'
@@ -141,13 +137,6 @@ const resetToDefaults = async () => {
   form.logLevel = 'info'
   await configStore.updateConfig(form)
   toast.info('Configuration reset to defaults')
-}
-
-const copyRootKey = () => {
-  if (configStore.rootKey) {
-    navigator.clipboard.writeText(configStore.rootKey)
-    toast.success('Root key copied to clipboard')
-  }
 }
 </script>
 

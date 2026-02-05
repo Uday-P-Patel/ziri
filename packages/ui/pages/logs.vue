@@ -210,10 +210,28 @@ onMounted(() => {
     </div>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="card">
-      <div class="space-y-2">
-        <UiLoadingSkeleton :lines="10" height="h-12" />
-      </div>
+    <div v-if="isLoading" class="overflow-x-auto rounded-xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b-2 border-[rgb(var(--border))]">
+            <th 
+              v-for="column in columns" 
+              :key="column.key"
+              class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[rgb(var(--text-muted))]"
+              :class="column.class"
+            >
+              <UiLoadingSkeleton :lines="1" height="h-4" width="60%" />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="i in itemsPerPage" :key="i" class="border-b border-[rgb(var(--border))]">
+            <td v-for="column in columns" :key="column.key" class="px-4 py-3">
+              <UiLoadingSkeleton :lines="1" height="h-4" :width="`${60 + Math.random() * 40}%`" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Logs Table -->

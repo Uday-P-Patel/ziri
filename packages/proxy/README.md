@@ -136,7 +136,7 @@ Update configuration via the UI's Config page (Admin only) or by editing the fil
 - `HOST` - Server host (default: 127.0.0.1)
 - `CONFIG_DIR` - Directory for config and data files
 - `ZIRI_ROOT_KEY` - Root key for admin auth (optional; if unset, key is written to `.ziri-root-key`)
-- `ZS_AI_ENCRYPTION_KEY` - Encryption key for sensitive data (optional, auto-generated)
+- `ZIRI_ENCRYPTION_KEY` - Encryption key for sensitive data (optional, auto-generated)
 - `NODE_ENV` - Environment (`development` or `production`)
 
 ## API Endpoints

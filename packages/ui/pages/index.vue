@@ -396,8 +396,27 @@ const activityColumns = [
           <NuxtLink to="/logs" class="text-sm font-medium text-[rgb(var(--primary))] hover:underline">View all logs</NuxtLink>
         </div>
       </div>
-      <div v-if="isLoading" class="space-y-2">
-        <UiLoadingSkeleton :lines="5" height="h-12" />
+      <div v-if="isLoading" class="overflow-x-auto rounded-xl border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))]">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b-2 border-[rgb(var(--border))]">
+              <th 
+                v-for="column in activityColumns" 
+                :key="column.key"
+                class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-[rgb(var(--text-muted))]"
+              >
+                <UiLoadingSkeleton :lines="1" height="h-4" width="60%" />
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="i in 10" :key="i" class="border-b border-[rgb(var(--border))]">
+              <td v-for="column in activityColumns" :key="column.key" class="px-4 py-3">
+                <UiLoadingSkeleton :lines="1" height="h-4" :width="`${60 + Math.random() * 40}%`" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       <UiTable v-else :columns="activityColumns" :data="recentActivity">
         <template #timestamp="{ value }">

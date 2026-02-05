@@ -10,12 +10,20 @@ import { logInternalOutcome } from '../utils/internal-audit-helpers.js'
 const router: Router = Router()
 
  
-router.get('/', (req: Request, res: Response) => {
+router.get('/', requireAdmin, async (req: Request, res: Response) => {
+  const actionStart = Date.now()
   try {
     const config = loadConfig()
     
  
- 
+
+    await logInternalOutcome(req, {
+      status: 'success',
+      code: '200',
+      message: 'Retrieved configuration',
+      actionDurationMs: Date.now() - actionStart
+    })
+
     res.json({
       mode: config.mode,
       server: {
@@ -24,10 +32,16 @@ router.get('/', (req: Request, res: Response) => {
       },
       publicUrl: config.publicUrl,
       email: config.email,
-      logLevel: config.logLevel,
-      rootKey: config.rootKey
+      logLevel: config.logLevel
     })
   } catch (error: any) {
+    await logInternalOutcome(req, {
+      status: 'failed',
+      code: '500',
+      message: error.message || 'Failed to load configuration',
+      actionDurationMs: Date.now() - actionStart
+    })
+
     res.status(500).json({
       error: 'Failed to load configuration',
       message: error.message

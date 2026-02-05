@@ -3,7 +3,7 @@ import { useAuth } from './useAuth'
 import { useConfigStore } from '~/stores/config'
 
 export function useApi() {
-    const { getToken } = useAuth()
+    const { getAuthHeader } = useAuth()
     const configStore = useConfigStore()
 
     const loading = ref(false)
@@ -31,8 +31,22 @@ export function useApi() {
         error.value = null
 
         try {
-            const token = await getToken()
-            console.log('[API] Token obtained:', token ? 'yes' : 'no')
+            const authHeader = getAuthHeader()
+            if (!authHeader) {
+                const errorMsg = 'Not authenticated. Please login.'
+                error.value = errorMsg
+                
+                if (process.client) {
+                    const { useAuth } = await import('./useAuth')
+                    const { logout } = useAuth()
+                    await logout()
+                    await navigateTo('/login')
+                }
+                
+                throw new Error(errorMsg)
+            }
+            
+            console.log('[API] Auth header obtained:', authHeader ? 'yes' : 'no')
             const config = useRuntimeConfig()
             const baseUrl = config.public.backendUrl || configStore.backendUrl
             console.log('[API] Base URL:', baseUrl)
@@ -40,7 +54,7 @@ export function useApi() {
 
             const headers: Record<string, string> = {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
+                'Authorization': authHeader,
                 'x-project-id': configStore.projectId,
                 'x-op-id': generateId(),
                 'x-session-id': sessionId.value,
@@ -68,6 +82,19 @@ export function useApi() {
             const errorMsg = e.data?.message || e.message || 'API request failed'
             console.error('[API] ❌ Request failed:', errorMsg, e)
             error.value = errorMsg
+            
+            if (process.client) {
+                if (e.status === 401 || e.statusCode === 401 || errorMsg.includes('Not authenticated') || errorMsg.includes('401')) {
+                    try {
+                        const { useAuth } = await import('./useAuth')
+                        const { logout } = useAuth()
+                        await logout()
+                        await navigateTo('/login')
+                    } catch (authError) {
+                        console.error('[API] Failed to handle auth error:', authError)
+                    }
+                }
+            }
  
             throw new Error(errorMsg)
         } finally {

@@ -69,8 +69,7 @@ export const useConfigStore = defineStore('config', {
                         pdpUrl: config.pdpUrl || '',
                         proxyUrl: config.proxyUrl || '',
                         port: config.port || config.server?.port || 3100,
-                        logLevel: config.logLevel || 'info',
-                        rootKey: config.rootKey || ''
+                        logLevel: config.logLevel || 'info'
                     }
                     this.$patch(uiConfig)
  
@@ -106,8 +105,7 @@ export const useConfigStore = defineStore('config', {
                         pdpUrl: parsed.pdpUrl || '',
                         proxyUrl: parsed.proxyUrl || '',
                         port: parsed.port || parsed.server?.port || 3100,
-                        logLevel: parsed.logLevel || 'info',
-                        rootKey: parsed.rootKey || ''
+                        logLevel: parsed.logLevel || 'info'
                     })
                 } catch (e) {
  
@@ -146,8 +144,7 @@ export const useConfigStore = defineStore('config', {
                 },
                 proxyUrl: this.proxyUrl || '',
                 port: this.port || this.server?.port || 3100,
-                logLevel: this.logLevel || 'info',
-                rootKey: this.rootKey
+                logLevel: this.logLevel || 'info'
             }
             setCookie(STORAGE_KEY, JSON.stringify(stateToSave), 365)
 

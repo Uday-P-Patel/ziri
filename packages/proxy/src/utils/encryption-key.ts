@@ -22,7 +22,7 @@ export function generateEncryptionKey(): string {
  
 export function getEncryptionKey(): string | null {
  
-  const envKey = process.env.ZS_AI_ENCRYPTION_KEY
+  const envKey = process.env.ZIRI_ENCRYPTION_KEY
   if (envKey && envKey.trim().length > 0) {
     currentEncryptionKey = envKey.trim()
     return currentEncryptionKey
@@ -98,7 +98,7 @@ export function initializeEncryptionKey(): string {
     } catch (configError: any) {
       console.error('[ENCRYPTION KEY] Failed to save encryption key to config file:', configError.message)
       console.warn('[ENCRYPTION KEY] Encryption key is in memory only - will be lost on restart!')
-      console.warn('[ENCRYPTION KEY] Set ZS_AI_ENCRYPTION_KEY environment variable for persistence')
+      console.warn('[ENCRYPTION KEY] Set ZIRI_ENCRYPTION_KEY environment variable for persistence')
     }
   }
 

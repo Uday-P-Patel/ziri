@@ -58,19 +58,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
 
  
-    const adminOnlyPages = [
-        '/dashboard',
-        '/',
-        '/users',
-        '/keys',
-        '/providers',
-        '/rules',
-        '/schema',
-        '/logs',
-        '/analytics',
-        '/config',
-        '/settings/manage-users'
-    ]
+    // Import navigation composable to get admin-only pages from single source of truth
+    const { getAdminOnlyPages } = await import('~/composables/useNavigation')
+    const adminOnlyPages = getAdminOnlyPages()
 
  
     const userPages = [
