@@ -1,53 +1,53 @@
 {
-  "name": "@ziri/proxy",
-  "version": "1.0.0",
-  "description": "ZIRI Proxy Server - Local server with SQLite database",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "bin": {
-    "ziri": "./dist/cli/cli.js"
-  },
-  "scripts": {
-    "build": "npm run build:ui && npm run build:proxy",
-    "build:ui": "cd ../ui && npm run build",
-    "build:proxy": "tsc && npm run copy:ui",
-    "copy:ui": "node scripts/copy-ui.js",
-    "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
-    "test:cedar": "tsx test-cedar-wasm.ts"
-  },
-  "dependencies": {
-    "@cedar-policy/cedar-wasm": "^4.8.2",
-    "@sendgrid/mail": "^8.1.6",
-    "bcrypt": "^5.1.1",
-    "better-queue": "^3.8.12",
-    "better-queue-sqlite": "^1.0.7",
-    "better-sqlite3": "^9.6.0",
-    "commander": "^11.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.3",
-    "nodemailer": "^7.0.12",
-    "rate-limiter-flexible": "^6.2.1"
-  },
-  "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^4.17.21",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/nodemailer": "^7.0.5",
-    "tsx": "^4.7.0",
-    "typescript": "^5.8.3"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "files": [
-    "dist/**/*",
-    "package.json",
-    "README.md"
-  ]
+	"name": "@ziri/proxy",
+	"version": "1.0.0",
+	"description": "ZIRI Proxy Server - Local server with SQLite database",
+	"type": "module",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"bin": {
+		"ziri": "./dist/cli/cli.js"
+	},
+	"scripts": {
+		"build": "npm run build:ui && npm run build:proxy",
+		"build:ui": "cd ../ui && npm run build",
+		"build:proxy": "tsc && npm run copy:ui",
+		"copy:ui": "node scripts/copy-ui.js",
+		"dev": "tsx watch src/index.ts",
+		"start": "node dist/index.js",
+		"test:cedar": "tsx test-cedar-wasm.ts"
+	},
+	"dependencies": {
+		"@cedar-policy/cedar-wasm": "^4.8.2",
+		"@sendgrid/mail": "^8.1.6",
+		"bcrypt": "^5.1.1",
+		"better-queue": "^3.8.12",
+		"better-queue-sqlite": "^1.0.7",
+		"better-sqlite3": "^9.6.0",
+		"commander": "^11.0.0",
+		"cors": "^2.8.5",
+		"dotenv": "^16.6.1",
+		"express": "^4.18.2",
+		"jsonwebtoken": "^9.0.3",
+		"nodemailer": "^7.0.12",
+		"rate-limiter-flexible": "^6.2.1"
+	},
+	"devDependencies": {
+		"@types/bcrypt": "^5.0.2",
+		"@types/better-sqlite3": "^7.6.13",
+		"@types/cors": "^2.8.19",
+		"@types/express": "^4.17.21",
+		"@types/jsonwebtoken": "^9.0.10",
+		"@types/nodemailer": "^7.0.5",
+		"tsx": "^4.7.0",
+		"typescript": "^5.8.3"
+	},
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"files": [
+		"dist/**/*",
+		"package.json",
+		"README.md"
+	]
 }

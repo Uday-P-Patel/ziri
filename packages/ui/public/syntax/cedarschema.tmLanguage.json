@@ -1,0 +1,93 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Cedar Schema",
+	"patterns": [
+		{
+			"include": "#comment"
+		},
+		{
+			"include": "#namespace"
+		},
+		{
+			"include": "#keywords"
+		},	
+		{
+			"include": "#sections"
+		},
+		{
+			"include": "#properties"
+		},
+		{
+			"include": "#strings"
+		}
+	],
+	"repository": {
+		"comment": {
+			"name": "comment.line.double-slash.cedarschema",
+			"match": "//.*(?=$)"
+		},
+		"namespace": {
+			"patterns": [{
+				"match": "\\b(namespace)\\s+(([_a-zA-Z][_a-zA-Z0-9]*::)*[_a-zA-Z][_a-zA-Z0-9]*)",
+				"captures": {
+					"1" : {
+						"name": "keyword.cedarschema"
+					},
+					"2" : {
+						"name": "entity.name.namespace.cedarschema"
+					}
+				}
+			}]
+		},
+		"sections": {
+			"patterns": [{
+				"name": "keyword.cedarschema",
+				"match": "^\\s*(type|entity|action)(?=\\s+)"
+			}]
+		},
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.cedarschema",
+				"match": "\\b(appliesTo)\\b"
+			},
+			{
+				"match": "\\b(enum|in)\\s*\\[",
+				"captures": {
+					"1" : {
+						"name": "keyword.cedarschema"
+					}
+				}
+			},
+			{
+				"match": "}\\s*(tags)\\b",
+				"captures": {
+					"1" : {
+						"name": "keyword.cedarschema"
+					}
+				}
+			}]
+		},
+		"properties": {
+			"patterns": [{
+				"match": "\\b([_a-zA-Z][_a-zA-Z0-9]*)(?=[?]?:(?!:))",
+				"captures": {
+					"1" : {
+						"name": "variable.other.property.cedarschema"
+					}
+				}
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.cedarschema",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.cedarschema",
+					"match": "\\\\."
+				}
+			]
+		}
+	},
+	"scopeName": "source.cedarschema"
+}

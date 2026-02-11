@@ -312,7 +312,7 @@ watch([messages, isLoading], () => {
                     </button>
                   </div>
                   <div class="code-editor-content">
-                    <pre class="cedar-code"><code>{{ message.content }}</code></pre>
+                    <UiShikiCode :code="message.content" lang="cedar-policy" />
                   </div>
                 </div>
                 <!-- Action button - full width of code block -->
@@ -621,19 +621,6 @@ watch([messages, isLoading], () => {
   overflow-x: auto;
 }
 
-.cedar-code {
-  display: block;
-  padding: 14px;
-  margin: 0;
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Courier New', monospace;
-  font-size: 11px;
-  line-height: 1.5;
-  color: rgb(var(--text));
-  background: transparent;
-  white-space: pre-wrap;
-  word-break: break-word;
-  tab-size: 2;
-}
 
 .code-editor-content::-webkit-scrollbar {
   height: 8px;
@@ -865,11 +852,6 @@ watch([messages, isLoading], () => {
 :global(.dark) .code-editor-header {
   background: rgb(var(--surface-elevated));
   border-bottom-color: rgb(var(--border));
-}
-
-:global(.dark) .cedar-code {
-  background: rgb(var(--bg));
-  color: rgb(var(--text));
 }
 
 :global(.dark) .code-editor-content {

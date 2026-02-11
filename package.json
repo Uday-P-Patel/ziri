@@ -1,28 +1,35 @@
 {
-  "name": "@ziri",
-  "version": "1.0.0",
-  "description": "ZIRI - Proxy server with management UI and CLI",
-  "private": true,
-  "type": "module",
-  "workspaces": [
-    "packages/*"
-  ],
-  "bin": {
-    "ziri": "./packages/proxy/dist/cli/cli.js"
-  },
-  "scripts": {
-    "dev:proxy": "npm run dev --workspace=packages/proxy",
-    "build": "npm run build:ui && npm run build:proxy",
-    "build:ui": "npm run build --workspace=packages/ui",
-    "build:proxy": "npm run build:proxy --workspace=packages/proxy",
-    "prepare": "npm run postinstall --workspace=packages/ui || true",
-    "start": "node packages/proxy/dist/cli/cli.js start",
-    "ui": "node packages/proxy/dist/cli/cli.js start"
-  },
-  "devDependencies": {
-    "typescript": "^5.8.3"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  }
+	"name": "@ziri",
+	"version": "1.0.0",
+	"description": "ZIRI - Proxy server with management UI and CLI",
+	"private": true,
+	"type": "module",
+	"workspaces": [
+		"packages/*"
+	],
+	"bin": {
+		"ziri": "./packages/proxy/dist/cli/cli.js"
+	},
+	"scripts": {
+		"dev": "concurrently -n proxy,ui -c blue,green \"npm run dev:proxy\" \"npm run dev:ui\"",
+		"dev:proxy": "npm run dev --workspace=packages/proxy",
+		"dev:ui": "npm run dev --workspace=packages/ui",
+		"build": "npm run build:ui && npm run build:proxy",
+		"build:ui": "npm run build --workspace=packages/ui",
+		"build:proxy": "npm run build:proxy --workspace=packages/proxy",
+		"prepare": "npm run postinstall --workspace=packages/ui || true",
+		"start": "node packages/proxy/dist/cli/cli.js start",
+		"ui": "node packages/proxy/dist/cli/cli.js start"
+	},
+	"overrides": {
+		"node-gyp": "^10"
+	},
+	"devDependencies": {
+		"concurrently": "^9.1.2",
+		"cross-env": "^7.0.3",
+		"typescript": "^5.8.3"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
 }

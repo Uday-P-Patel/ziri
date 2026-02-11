@@ -9,8 +9,7 @@ export function useApi() {
     const loading = ref(false)
     const error = ref<string | null>(null)
 
- 
- 
+
     const sessionId = ref(Math.random().toString(36).substring(2, 7))
 
     const generateId = () => {
@@ -35,20 +34,22 @@ export function useApi() {
             if (!authHeader) {
                 const errorMsg = 'Not authenticated. Please login.'
                 error.value = errorMsg
-                
+
                 if (process.client) {
                     const { useAuth } = await import('./useAuth')
                     const { logout } = useAuth()
                     await logout()
                     await navigateTo('/login')
                 }
-                
+
                 throw new Error(errorMsg)
             }
-            
+
             console.log('[API] Auth header obtained:', authHeader ? 'yes' : 'no')
             const config = useRuntimeConfig()
-            const baseUrl = config.public.backendUrl || configStore.backendUrl
+            // const baseUrl = config.public.backendUrl || configStore.backendUrl
+            // Use backendUrl from runtime config; empty string means same-origin (relative URLs)
+            const baseUrl = config.public.backendUrl ?? ''
             console.log('[API] Base URL:', baseUrl)
             console.log('[API] Project ID:', configStore.projectId)
 
@@ -82,7 +83,7 @@ export function useApi() {
             const errorMsg = e.data?.message || e.message || 'API request failed'
             console.error('[API] ❌ Request failed:', errorMsg, e)
             error.value = errorMsg
-            
+
             if (process.client) {
                 if (e.status === 401 || e.statusCode === 401 || errorMsg.includes('Not authenticated') || errorMsg.includes('401')) {
                     try {
@@ -95,7 +96,7 @@ export function useApi() {
                     }
                 }
             }
- 
+
             throw new Error(errorMsg)
         } finally {
             loading.value = false

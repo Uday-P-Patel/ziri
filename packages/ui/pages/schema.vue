@@ -6,7 +6,9 @@ import { useToast } from '~/composables/useToast'
 import { formatDate } from '~/utils/formatters'
 import type { ValidationError } from '~/composables/useCedarWasm'
 import { useInternalAuth } from '~/composables/useInternalAuth'
+import type * as Monaco from 'monaco-editor'
 
+const monacoEditor = useMonacoEditor();
 const configStore = useConfigStore()
 const { getSchema, updateSchema, lastSyncedAt, loading } = useSchema()
 const { schemaToJson, schemaToText, validateCedarSchema, validateJsonSchema } = useCedarWasm()
@@ -120,23 +122,48 @@ const convertCedarToJson = async (cedarText: string): Promise<any> => {
 const validateSchema = async () => {
   if (!schemaContent.value.trim()) {
     validationErrors.value = []
+    await setMarkersFromErrors([])
     return
   }
   
   try {
     if (viewMode.value === 'cedar') {
- 
       const result = await validateCedarSchema(schemaContent.value)
       validationErrors.value = result.errors
     } else {
- 
+      // JSON mode: first check if JSON is parseable
+      let parsed: any
       try {
-        const parsed = JSON.parse(schemaContent.value)
-        const result = await validateJsonSchema(parsed)
-        validationErrors.value = result.errors
+        parsed = JSON.parse(schemaContent.value)
       } catch (parseError: any) {
+        // Extract position from the JSON parse error message if possible
+        const posMatch = parseError.message.match(/position\s+(\d+)/i)
+        const sourceLocations = posMatch
+          ? [{ start: parseInt(posMatch[1]), end: parseInt(posMatch[1]) + 1 }]
+          : []
+
         validationErrors.value = [{
           message: `JSON Parse Error: ${parseError.message}`,
+          help: null,
+          sourceLocations
+        }]
+        await setMarkersFromErrors(validationErrors.value)
+        return
+      }
+
+      // JSON is valid syntax — validate as Cedar schema with a timeout
+      // to prevent WASM from hanging the page on complex/invalid schemas
+      try {
+        const result = await Promise.race([
+          validateJsonSchema(parsed),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Schema validation timed out')), 5000)
+          )
+        ])
+        validationErrors.value = result.errors
+      } catch (wasmError: any) {
+        validationErrors.value = [{
+          message: wasmError.message || 'JSON schema validation failed',
           help: null,
           sourceLocations: []
         }]
@@ -149,6 +176,9 @@ const validateSchema = async () => {
       sourceLocations: []
     }]
   }
+
+  // Push validation errors as Monaco editor markers (red squiggly underlines)
+  await setMarkersFromErrors(validationErrors.value)
 }
 
  
@@ -279,6 +309,115 @@ const startEditing = async () => {
 }
 
 const displayLastSynced = computed(() => lastSyncedAt.value || new Date())
+
+// Disable language switch when there are validation errors
+const hasEditorErrors = computed(() => validationErrors.value.length > 0)
+
+// Compute the Monaco language id based on viewMode
+const editorLang = computed(() => {
+  return viewMode.value === 'cedar' ? 'cedar-schema' : 'custom-json'
+})
+
+// Keep a reference to the active editor instance so validation can set markers
+const editorInstance = ref<Monaco.editor.IStandaloneCodeEditor | null>(null)
+
+const schemaEditor = ref({
+    cursorPos: {
+        line: 1,
+        column: 1
+    },
+    hasError: false,
+    schemaConversionError: [] as string[]
+});
+
+const cursorPositionDisplay = computed(() => {
+  return `${schemaEditor.value.cursorPos.line}:${schemaEditor.value.cursorPos.column}`
+})
+
+/**
+ * Convert ValidationError[] into Monaco IMarkerData[] and push them onto the editor model.
+ */
+const setMarkersFromErrors = async (errors: ValidationError[]) => {
+    const editor = editorInstance.value
+    if (!editor) return
+
+    const model = editor.getModel()
+    if (!model || model.isDisposed()) return
+
+    const markers: Monaco.editor.IMarkerData[] = errors.map((err) => {
+        // Try to map sourceLocations (character offsets) to line/column
+        if (err.sourceLocations && err.sourceLocations.length > 0) {
+            const loc = err.sourceLocations[0]
+            const startPos = model.getPositionAt(loc.start)
+            const endPos = model.getPositionAt(loc.end)
+            return {
+                severity: 8, // MarkerSeverity.Error
+                message: err.message + (err.help ? `\n${err.help}` : ''),
+                startLineNumber: startPos.lineNumber,
+                startColumn: startPos.column,
+                endLineNumber: endPos.lineNumber,
+                endColumn: endPos.column,
+            }
+        }
+
+        // No source location — mark the first line as a fallback
+        return {
+            severity: 8, // MarkerSeverity.Error
+            message: err.message + (err.help ? `\n${err.help}` : ''),
+            startLineNumber: 1,
+            startColumn: 1,
+            endLineNumber: 1,
+            endColumn: model.getLineMaxColumn(1),
+        }
+    })
+
+    await monacoEditor.setEditorMarker(model, markers)
+}
+
+const onEditorMounted = (editor: Monaco.editor.IStandaloneCodeEditor) => {
+    // Store the editor reference for marker updates
+    editorInstance.value = editor
+
+    // Apply the correct theme on editor mount
+    monacoEditor.setTheme();
+
+    // Listen to cursor position change
+    editor.onDidChangeCursorPosition(({ position }) => {
+        schemaEditor.value.cursorPos = { line: position.lineNumber, column: position.column };
+    });
+}
+
+const onSchemaContentChanged = async (editor: Monaco.editor.IStandaloneCodeEditor) => {
+    const model = editor.getModel();
+    if (model) {
+        // Check if model is still valid before validation
+        if (!model.isDisposed()) {
+            // Validate immediately on mount
+            await validateSchema();
+            
+            // Set up content change listener for continuous validation
+            editor.onDidChangeModelContent(() => {
+                debouncedValidate();
+            });
+        }
+    }
+}
+
+const monitorSchemaMarkerChanges = async (editor: Monaco.editor.IStandaloneCodeEditor) => {
+    const monaco = await useMonaco();
+    const model = editor.getModel();
+    if (monaco && model) {
+        monaco.editor.onDidChangeMarkers((uris: Monaco.Uri[]) => {
+            // Check if the markers are for the current model
+            if (uris.some((uri: Monaco.Uri) => uri.toString() === model.uri.toString())) {
+                // Get updated markers for this model
+                const markers = monaco.editor.getModelMarkers({ resource: model.uri });
+                
+                schemaEditor.value.hasError = markers.length > 0;
+            }
+        });
+    }
+}
 </script>
 
 <template>
@@ -315,7 +454,7 @@ const displayLastSynced = computed(() => lastSyncedAt.value || new Date())
         <span class="text-xs text-[rgb(var(--text-muted))]">
           Synced: {{ formatDate(displayLastSynced) }}
         </span>
-        <span v-if="validationErrors.length > 0" class="badge badge-danger">
+        <span v-if="schemaEditor.hasError || validationErrors.length > 0" class="badge badge-danger">
           {{ validationErrors.length }} error(s)
         </span>
         <span v-else-if="isEditing && schemaContent.trim()" class="badge badge-success">
@@ -326,22 +465,26 @@ const displayLastSynced = computed(() => lastSyncedAt.value || new Date())
         <div class="flex items-center gap-1 rounded-lg border-2 border-[rgb(var(--border))] p-1">
           <button
             @click="onModeSwitch('json')"
+            :disabled="hasEditorErrors"
             :class="[
               'px-3 py-1 rounded text-xs font-medium transition-all',
               viewMode === 'json'
                 ? 'bg-indigo-500 text-white'
-                : 'text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))]'
+                : 'text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))]',
+              hasEditorErrors && viewMode !== 'json' ? 'opacity-40 cursor-not-allowed' : ''
             ]"
           >
             JSON
           </button>
           <button
             @click="onModeSwitch('cedar')"
+            :disabled="hasEditorErrors"
             :class="[
               'px-3 py-1 rounded text-xs font-medium transition-all',
               viewMode === 'cedar'
                 ? 'bg-indigo-500 text-white'
-                : 'text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))]'
+                : 'text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))]',
+              hasEditorErrors && viewMode !== 'cedar' ? 'opacity-40 cursor-not-allowed' : ''
             ]"
           >
             Cedar
@@ -408,24 +551,29 @@ const displayLastSynced = computed(() => lastSyncedAt.value || new Date())
     </div>
     
     <!-- Schema Editor -->
-    <div class="flex-1 min-h-0 card p-0 overflow-hidden">
-      <div v-if="loading && !isEditing" class="p-6">
+      <div v-if="loading && !isEditing" class="flex-1 min-h-0 card overflow-hidden p-6">
         <UiLoadingSkeleton :lines="15" height="h-5" />
       </div>
-      <textarea 
-        v-else
-        :value="schemaContent" 
-        @input="onSchemaChange(($event.target as HTMLTextAreaElement).value)"
-        @blur="validateSchema"
-        :readonly="!isEditing"
-        :class="[
-          'w-full h-full p-5 font-mono text-xs bg-transparent text-[rgb(var(--text))] border-0 resize-none focus:outline-none leading-relaxed',
-          !isEditing && 'cursor-default',
-          isEditing && validationErrors.length > 0 && 'ring-2 ring-red-500'
-        ]"
-        spellcheck="false"
-        placeholder="Loading schema..."
-      />
+      <div v-else class="flex-1 min-h-0 flex flex-col card overflow-hidden p-0">
+        <MonacoEditor
+          :key="viewMode"
+          v-model="schemaContent"
+          :lang="editorLang"
+          :options="{ ...monacoEditor.options, readOnly: !isEditing }"
+          class="flex-1 min-h-0"
+          @load="(editor) => { onEditorMounted(editor); onSchemaContentChanged(editor); monitorSchemaMarkerChanges(editor); }"
+        />
+        <div class="shrink-0 flex items-center justify-between text-xs px-2 py-1 bg-neutral-200 dark:bg-slate-900 text-neutral-500 dark:text-neutral-400">
+          <span class="font-medium uppercase tracking-wide">{{ viewMode === 'cedar' ? 'Cedar' : 'JSON' }}</span>
+          <span class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-1" :class="isEditing ? 'text-amber-600 dark:text-amber-400' : ''">
+              <span class="inline-block w-1.5 h-1.5 rounded-full" :class="isEditing ? 'bg-amber-500' : 'bg-neutral-400 dark:bg-neutral-500'"></span>
+              {{ isEditing ? 'EDIT' : 'READ' }}
+            </span>
+            |
+            <span>Ln {{ schemaEditor.cursorPos.line }}, Col {{ schemaEditor.cursorPos.column }}</span>
+          </span>
+        </div>
       </div>
     </template>
   </div>

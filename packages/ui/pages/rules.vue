@@ -10,6 +10,7 @@ import { useInternalAuth } from '~/composables/useInternalAuth'
 import AIPolicyChatModal from '~/components/AIPolicyChatModal.vue'
 import type { Policy, CreatePolicyInput } from '~/types/cedar'
 import type { ValidationError } from '~/composables/useCedarWasm'
+import type * as Monaco from 'monaco-editor'
 
 const configStore = useConfigStore()
 const { listRules, createRule, updateRule, deleteRule, setRuleStatus, rules, loading } = useRules()
@@ -280,6 +281,7 @@ const validatePolicy = async (policyText: string) => {
   if (!policyText.trim()) {
     validationErrors.value = []
     validationWarnings.value = []
+    await setPolicyMarkers([])
     return
   }
   
@@ -292,8 +294,8 @@ const validatePolicy = async (policyText: string) => {
     const result = await validatePolicies(policyText, schema)
     validationErrors.value = result.errors
     validationWarnings.value = result.warnings
-    } catch (e: any) {
-      validationErrors.value = [{
+  } catch (e: any) {
+    validationErrors.value = [{
       message: `Validation failed: ${e.message}`,
       help: null,
       sourceLocations: []
@@ -302,6 +304,9 @@ const validatePolicy = async (policyText: string) => {
   } finally {
     isValidating.value = false
   }
+
+  // Push errors as Monaco markers
+  await setPolicyMarkers(validationErrors.value)
 }
 
  
@@ -356,6 +361,79 @@ const onPolicyBlur = async () => {
  
       debouncedValidate(formatted)
     }
+  }
+}
+
+// ── Monaco Editor for policy ──
+const monacoEditor = useMonacoEditor()
+const policyEditorInstance = shallowRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
+const policyCursorPos = ref({ line: 1, column: 1 })
+
+const setPolicyMarkers = async (errors: ValidationError[]) => {
+  const editor = policyEditorInstance.value
+  if (!editor) return
+  const model = editor.getModel()
+  if (!model || model.isDisposed()) return
+
+  const markers: Monaco.editor.IMarkerData[] = errors.map((err) => {
+    if (err.sourceLocations && err.sourceLocations.length > 0) {
+      const loc = err.sourceLocations[0]
+      const startPos = model.getPositionAt(loc.start)
+      const endPos = model.getPositionAt(loc.end)
+      return {
+        severity: 8,
+        message: err.message + (err.help ? `\n${err.help}` : ''),
+        startLineNumber: startPos.lineNumber,
+        startColumn: startPos.column,
+        endLineNumber: endPos.lineNumber,
+        endColumn: endPos.column,
+      }
+    }
+    return {
+      severity: 8,
+      message: err.message + (err.help ? `\n${err.help}` : ''),
+      startLineNumber: 1,
+      startColumn: 1,
+      endLineNumber: 1,
+      endColumn: model.getLineMaxColumn(1),
+    }
+  })
+
+  await monacoEditor.setEditorMarker(model, markers)
+}
+
+const onPolicyEditorLoad = (editor: Monaco.editor.IStandaloneCodeEditor) => {
+  policyEditorInstance.value = editor
+  monacoEditor.setTheme()
+
+  // Track cursor position
+  editor.onDidChangeCursorPosition(({ position }) => {
+    policyCursorPos.value = { line: position.lineNumber, column: position.column }
+  })
+
+  // Validate existing content on mount
+  if (newRule.policy.trim()) {
+    validatePolicy(newRule.policy)
+  }
+
+  // Listen for content changes
+  editor.onDidChangeModelContent(() => {
+    const value = editor.getValue()
+    newRule.policy = value
+    debouncedValidate(value)
+  })
+}
+
+// Monitor marker changes to sync hasError state
+const onPolicyMarkerChanges = async (editor: Monaco.editor.IStandaloneCodeEditor) => {
+  const monaco = await useMonaco()
+  const model = editor.getModel()
+  if (monaco && model) {
+    monaco.editor.onDidChangeMarkers((uris: Monaco.Uri[]) => {
+      if (uris.some((uri: Monaco.Uri) => uri.toString() === model.uri.toString())) {
+        // Marker state is already tracked via validationErrors ref
+      }
+    })
   }
 }
 
@@ -784,17 +862,19 @@ const handleUseAIPolicy = async (policy: string) => {
             <span v-else-if="validationErrors.length > 0" class="text-xs text-red-500">{{ validationErrors.length }} error(s)</span>
             <span v-else-if="newRule.policy.trim()" class="text-xs text-green-500">Valid</span>
           </div>
-          <textarea 
-            :value="newRule.policy"
-            @input="onPolicyChange(($event.target as HTMLTextAreaElement).value)"
-            @blur="onPolicyBlur"
-            rows="8"
-            placeholder="permit(principal, action, resource) when { ... };"
-            :class="[
-              'input resize-none font-mono text-xs',
-              validationErrors.length > 0 && 'ring-2 ring-red-500'
-            ]"
-          />
+          <div class="rounded-lg overflow-hidden border-2" :class="validationErrors.length > 0 ? 'border-red-500' : 'border-[rgb(var(--border))]'">
+            <MonacoEditor
+              v-model="newRule.policy"
+              lang="cedar-policy"
+              :options="monacoEditor.options"
+              class="h-44"
+              @load="(editor) => { onPolicyEditorLoad(editor); onPolicyMarkerChanges(editor); }"
+            />
+            <div class="flex items-center justify-between text-xs px-2 py-0.5 bg-neutral-200 dark:bg-slate-900 text-neutral-500 dark:text-neutral-400">
+              <span class="font-medium uppercase tracking-wide">Cedar</span>
+              <span>Ln {{ policyCursorPos.line }}, Col {{ policyCursorPos.column }}</span>
+            </div>
+          </div>
           
           <!-- Validation Errors -->
           <div v-if="validationErrors.length > 0" class="mt-2 space-y-1 max-h-40 overflow-y-auto">
@@ -805,11 +885,6 @@ const handleUseAIPolicy = async (policy: string) => {
             >
               <p class="text-xs text-red-700 dark:text-red-300">{{ error.message }}</p>
               <p v-if="error.help" class="text-xs text-red-600 dark:text-red-400 mt-0.5">{{ error.help }}</p>
-              <div v-if="error.sourceLocations && error.sourceLocations.length > 0" class="mt-1">
-                <p class="text-xs text-red-600 dark:text-red-400">
-                  Position: {{ error.sourceLocations[0].start }}-{{ error.sourceLocations[0].end }}
-                </p>
-              </div>
             </div>
           </div>
           
@@ -861,8 +936,8 @@ const handleUseAIPolicy = async (policy: string) => {
                   <h4 class="font-semibold text-[rgb(var(--text))] mb-1">{{ template.title }}</h4>
                   <p class="text-sm text-[rgb(var(--text-muted))] mb-3">{{ template.description }}</p>
                 </div>
-                <div class="p-3 rounded bg-[rgb(var(--surface))] border border-[rgb(var(--border))] max-h-32 overflow-y-auto">
-                  <pre class="text-xs text-[rgb(var(--text-muted))] font-mono whitespace-pre-wrap break-words">{{ template.policy }}</pre>
+                <div class="rounded bg-[rgb(var(--surface))] border border-[rgb(var(--border))] max-h-32 overflow-y-auto">
+                  <UiShikiCode :code="template.policy" lang="cedar-policy" />
                 </div>
                 <div class="flex justify-end pt-2 border-t border-[rgb(var(--border))]">
                   <UiButton 
@@ -926,17 +1001,19 @@ const handleUseAIPolicy = async (policy: string) => {
             <span v-else-if="validationErrors.length > 0" class="text-xs text-red-500">{{ validationErrors.length }} error(s)</span>
             <span v-else-if="newRule.policy.trim()" class="text-xs text-green-500">Valid</span>
           </div>
-          <textarea 
-            :value="newRule.policy"
-            @input="onPolicyChange(($event.target as HTMLTextAreaElement).value)"
-            @blur="onPolicyBlur"
-            rows="8"
-            placeholder="permit(principal, action, resource) when { ... };"
-            :class="[
-              'input resize-none font-mono text-xs',
-              validationErrors.length > 0 && 'ring-2 ring-red-500'
-            ]"
-          />
+          <div class="rounded-lg overflow-hidden border-2" :class="validationErrors.length > 0 ? 'border-red-500' : 'border-[rgb(var(--border))]'">
+            <MonacoEditor
+              v-model="newRule.policy"
+              lang="cedar-policy"
+              :options="monacoEditor.options"
+              class="h-44"
+              @load="(editor) => { onPolicyEditorLoad(editor); onPolicyMarkerChanges(editor); }"
+            />
+            <div class="flex items-center justify-between text-xs px-2 py-0.5 bg-neutral-200 dark:bg-slate-900 text-neutral-500 dark:text-neutral-400">
+              <span class="font-medium uppercase tracking-wide">Cedar</span>
+              <span>Ln {{ policyCursorPos.line }}, Col {{ policyCursorPos.column }}</span>
+            </div>
+          </div>
           
           <!-- Validation Errors -->
           <div v-if="validationErrors.length > 0" class="mt-2 space-y-1 max-h-40 overflow-y-auto">
@@ -947,11 +1024,6 @@ const handleUseAIPolicy = async (policy: string) => {
             >
               <p class="text-xs text-red-700 dark:text-red-300">{{ error.message }}</p>
               <p v-if="error.help" class="text-xs text-red-600 dark:text-red-400 mt-0.5">{{ error.help }}</p>
-              <div v-if="error.sourceLocations && error.sourceLocations.length > 0" class="mt-1">
-                <p class="text-xs text-red-600 dark:text-red-400">
-                  Position: {{ error.sourceLocations[0].start }}-{{ error.sourceLocations[0].end }}
-                </p>
-              </div>
             </div>
           </div>
           
