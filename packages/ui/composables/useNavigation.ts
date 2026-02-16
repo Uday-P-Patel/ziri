@@ -40,7 +40,7 @@ export function getNavSections(isDashboardUser: boolean): NavSection[] {
         adminOnly: false,
         items: [
           { name: 'Schema', path: '/schema', icon: 'schema', adminOnly: false },
-          { name: 'Rules', path: '/rules', icon: 'rules', adminOnly: false }
+          { name: 'Policies', path: '/policies', icon: 'rules', adminOnly: false }
         ]
       },
       {
@@ -63,7 +63,7 @@ export function getNavSections(isDashboardUser: boolean): NavSection[] {
       {
         title: 'Settings',
         icon: 'settings',
-        adminOnly: true, // Only admins can see Settings section (includes Config and Manage Users)
+        adminOnly: true,
         items: [
           { name: 'Configuration', path: '/config', icon: 'config', adminOnly: true },
           { name: 'Manage Users', path: '/settings/manage-users', icon: 'users', adminOnly: true, requiresAdmin: true },

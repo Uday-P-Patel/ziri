@@ -4,6 +4,7 @@ import { useUserAuth } from '~/composables/useUserAuth'
 import { useAdminAuthStore } from '~/stores/admin-auth'
 import { useUserAuthStore } from '~/stores/user-auth'
 import { useNavigation } from '~/composables/useNavigation'
+import ziriLogo from '~/assets/logo/ziri.png'
 
 const route = useRoute()
 const adminAuth = useAdminAuth()
@@ -46,7 +47,7 @@ const pageTitle = computed(() => {
     '/analytics': 'Analytics',
     '/logs': 'Logs',
     '/schema': 'Schema',
-    '/rules': 'Rules',
+    '/policies': 'Policies',
     '/users': 'Users',
     '/keys': 'API Keys',
     '/providers': 'LLM Providers',
@@ -98,10 +99,12 @@ const pageTitle = computed(() => {
         class="md:hidden flex-shrink-0 flex flex-col border-r-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] w-16 h-screen"
       >
         <div class="h-14 px-2 py-2 border-b-2 border-[rgb(var(--border))] flex items-center justify-center">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 dark:from-indigo-400 dark:to-indigo-500 p-1.5 flex items-center justify-center shadow-md shadow-indigo-500/25 dark:shadow-indigo-500/15 ring-1 ring-indigo-500/20 dark:ring-indigo-400/20">
+            <img 
+              :src="ziriLogo" 
+              alt="Ziri Logo" 
+              class="w-full h-full object-contain invert brightness-0 contrast-200"
+            />
           </div>
         </div>
         <nav class="flex-1 p-2 space-y-4 overflow-y-auto flex flex-col">

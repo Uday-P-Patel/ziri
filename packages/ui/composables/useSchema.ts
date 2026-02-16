@@ -1,7 +1,7 @@
 import { useSchemaStore } from '~/stores/schema'
 import { useToast } from './useToast'
 import { useAdminAuth } from './useAdminAuth'
-import { useApiError } from './useApiError'
+import { extractApiErrorMessage, useApiError } from './useApiError'
 import type { SchemaApiResponse } from '~/types/api'
 
 export function useSchema() {
@@ -29,7 +29,7 @@ export function useSchema() {
             
             if (!response.ok) {
                 const error = await response.json().catch(() => ({ error: response.statusText }))
-                throw new Error(error.error || 'Failed to load schema')
+                throw new Error(extractApiErrorMessage({ data: error }, 'Failed to load schema'))
             }
             
             const data: SchemaApiResponse = await response.json()
@@ -93,7 +93,7 @@ export function useSchema() {
             
             if (!response.ok) {
                 const error = await response.json().catch(() => ({ error: response.statusText }))
-                throw new Error(error.error || 'Failed to update schema')
+                throw new Error(extractApiErrorMessage({ data: error }, 'Failed to update schema'))
             }
             
             const data: SchemaApiResponse = await response.json()

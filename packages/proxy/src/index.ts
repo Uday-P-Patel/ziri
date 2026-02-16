@@ -20,23 +20,6 @@ getDatabase()
  
 const config = loadConfig()
 
-console.log('[PROXY] Configuration loaded')
-console.log(`[PROXY] Mode: ${config.mode || 'local'}`)
-console.log(`[PROXY] Port: ${config.port}`)
-console.log(`[PROXY] Host: ${config.host || '127.0.0.1'}`)
-if (config.publicUrl) {
-  console.log(`[PROXY] Public URL: ${config.publicUrl}`)
-}
-if (config.mode === 'live') {
-  if (config.backendUrl) {
-    console.log(`[PROXY] Backend URL: ${config.backendUrl}`)
-  }
-  if (config.pdpUrl) {
-    console.log(`[PROXY] PDP URL: ${config.pdpUrl}`)
-  }
-}
-
- 
 serviceFactory.initialize()
 
  
@@ -77,7 +60,6 @@ if (isMainModule) {
 
  
 process.on('SIGINT', async () => {
-  console.log('\n[PROXY] Shutting down...')
   await stopServer()
  
   const { eventEmitterService } = await import('./services/event-emitter-service.js')
@@ -87,7 +69,6 @@ process.on('SIGINT', async () => {
 })
 
 process.on('SIGTERM', async () => {
-  console.log('\n[PROXY] Shutting down...')
   await stopServer()
  
   const { eventEmitterService } = await import('./services/event-emitter-service.js')

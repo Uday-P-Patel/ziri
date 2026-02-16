@@ -1,5 +1,3 @@
- 
-
 import { Router, type Request, type Response } from 'express'
 import { requireAdmin } from '../middleware/auth.js'
 import { getDatabase } from '../db/index.js'
@@ -12,7 +10,6 @@ router.use(requireAdmin)
 
  
 router.get('/overview', (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const db = getDatabase()
     

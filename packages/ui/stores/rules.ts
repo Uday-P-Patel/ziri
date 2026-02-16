@@ -11,9 +11,6 @@ export const useRulesStore = defineStore('rules', {
         error: null as string | null
     }),
 
-    getters: {
-    },
-
     actions: {
         extractEffect(policy: string): 'permit' | 'forbid' {
             return policy.trim().startsWith('forbid') ? 'forbid' : 'permit'

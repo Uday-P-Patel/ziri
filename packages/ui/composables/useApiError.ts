@@ -2,18 +2,58 @@ import { ERROR_MESSAGES } from '~/config/error-messages'
 
 type AnyError = {
   message?: string
+  statusMessage?: string
+  error?: unknown
   data?: {
-    error?: string
+    error?: unknown
     message?: string
+    statusMessage?: string
     code?: string
   }
   response?: {
     data?: {
-      error?: string
+      error?: unknown
       message?: string
+      statusMessage?: string
       code?: string
     }
   }
+}
+
+function nonEmptyString(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (trimmed === 'true' || trimmed === 'false') return null
+  return trimmed
+}
+
+export function extractApiErrorMessage(
+  err: unknown,
+  fallback = 'Something went wrong. Please try again.'
+): string {
+  const error = err as AnyError
+  const body = (error?.data ?? error?.response?.data ?? {}) as Record<string, unknown>
+  const code = typeof body.code === 'string' ? body.code : null
+
+  if (code && ERROR_MESSAGES[code]) {
+    return ERROR_MESSAGES[code]
+  }
+
+  const candidates: Array<unknown> = [
+    body.error,
+    body.message,
+    body.statusMessage,
+    error?.statusMessage,
+    error?.message
+  ]
+
+  for (const candidate of candidates) {
+    const msg = nonEmptyString(candidate)
+    if (msg) return msg
+  }
+
+  return fallback
 }
 
 export function useApiError() {
@@ -28,23 +68,7 @@ export function useApiError() {
   }
 
   const getUserMessage = (err: unknown): string => {
-    const body = getBody(err)
-    const apiError = body.error ?? body.message
-    const code = getCode(err)
-
-    if (code && ERROR_MESSAGES[code]) {
-      return ERROR_MESSAGES[code]
-    }
-    if (typeof apiError === 'string' && apiError.trim().length > 0) {
-      return apiError
-    }
-
-    const fallbackMessage = (err as AnyError)?.message
-    if (typeof fallbackMessage === 'string' && fallbackMessage.trim().length > 0) {
-      return fallbackMessage
-    }
-
-    return 'Something went wrong. Please try again.'
+    return extractApiErrorMessage(err)
   }
 
   return { getUserMessage, getCode }

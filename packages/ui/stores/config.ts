@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { GatewayConfig } from '~/types/config'
 import { defaultConfig } from '~/types/config'
+import { extractApiErrorMessage } from '~/composables/useApiError'
 
 const STORAGE_KEY = 'llm-gateway-config'
 
@@ -176,7 +177,7 @@ export const useConfigStore = defineStore('config', {
 
                 if (!response.ok) {
                     const error = await response.json().catch(() => ({ error: response.statusText }))
-                    throw new Error(error.error || error.message || 'Failed to save configuration')
+                    throw new Error(extractApiErrorMessage({ data: error }, 'Failed to save configuration'))
                 }
             } catch (error) {
                 throw error

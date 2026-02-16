@@ -159,7 +159,7 @@ async function ensureInitialization() {
 
   await initializeInternalAuth().catch((error) => {
     console.error('[PROXY] Failed to initialize internal authorization:', error)
-    throw error // This is critical, so we should fail startup if it fails
+    throw error 
   })
   
   const config = loadConfig()

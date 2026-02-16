@@ -1,57 +1,11 @@
- 
+import { proxyJsonRequest } from '../utils/proxy-request'
 
-import { getAuthHeader } from '../utils/auth'
-
-export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
-  const proxyUrl = config.public.proxyUrl || 'http://localhost:3100'
-  const authHeader = getAuthHeader(event)
+export default defineEventHandler((event) => {
   const query = getQuery(event)
-  
-  if (!authHeader) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Authentication required'
-    })
-  }
-  
- 
-  const headers: Record<string, string> = {
-    'Authorization': authHeader.startsWith('Bearer ') ? authHeader : `Bearer ${authHeader}`
-  }
-  
-  try {
- 
-    const url = new URL(`${proxyUrl}/api/entities`)
-    if (query.uid) {
-      url.searchParams.set('uid', query.uid as string)
-    }
-    if (query.includeApiKeys) {
-      url.searchParams.set('includeApiKeys', query.includeApiKeys as string)
-    }
-    
-    const response = await fetch(url.toString(), {
-      headers
-    })
-    
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: response.statusText }))
-      throw createError({
-        statusCode: response.status,
-        statusMessage: error.error || response.statusText
-      })
-    }
-    
-    const data = await response.json()
- 
-    return data
-  } catch (error: any) {
-    if (error.statusCode) {
-      throw error
-    }
-    throw createError({
-      statusCode: 500,
-      statusMessage: `Failed to proxy request: ${error.message}`
-    })
-  }
+  const params = new URLSearchParams()
+  if (query.uid) params.set('uid', query.uid as string)
+  if (query.includeApiKeys) params.set('includeApiKeys', query.includeApiKeys as string)
+  const qs = params.toString()
+  const path = qs ? `/api/entities?${qs}` : '/api/entities'
+  return proxyJsonRequest(event, { path, authMode: 'bearer' })
 })

@@ -1,4 +1,3 @@
-
 import { Router, type Request, type Response } from 'express'
 import { requireAdmin } from '../middleware/auth.js'
 import { chatCompletions } from '../services/llm-service.js'

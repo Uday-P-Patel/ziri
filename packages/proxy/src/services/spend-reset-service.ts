@@ -3,13 +3,7 @@
 import type Database from 'better-sqlite3'
 import { getDatabase } from '../db/index.js'
 import type { Entity } from '../types/entity.js'
-
-interface CedarDecimalValue {
-  __extn: {
-    fn: 'decimal'
-    arg: string
-  }
-}
+import { createDecimalValue, type CedarDecimalValue } from '../utils/cedar.js'
 
 type UserKeyEntity = Entity & {
   uid: {
@@ -71,13 +65,13 @@ export class SpendResetService {
       const currentTimestamp = now.toISOString()
 
       if (needsDailyReset) {
-        updatedAttrs.current_daily_spend = this.createDecimalValue('0.0000')
+        updatedAttrs.current_daily_spend = createDecimalValue('0.0000')
         updatedAttrs.last_daily_reset = currentTimestamp
         result.dailyReset = true
       }
 
       if (needsMonthlyReset) {
-        updatedAttrs.current_monthly_spend = this.createDecimalValue('0.0000')
+        updatedAttrs.current_monthly_spend = createDecimalValue('0.0000')
         updatedAttrs.last_monthly_reset = currentTimestamp
         result.monthlyReset = true
       }
@@ -130,16 +124,6 @@ export class SpendResetService {
       return true
     }
     return false
-  }
-
-   
-  private createDecimalValue(value: string): CedarDecimalValue {
-    return {
-      __extn: {
-        fn: 'decimal',
-        arg: value,
-      },
-    }
   }
 
    

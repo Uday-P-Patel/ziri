@@ -2,7 +2,7 @@
 import { useRules } from '~/composables/useRules'
 import { useConfigStore } from '~/stores/config'
 import { useToast } from '~/composables/useToast'
-import { useApiError } from '~/composables/useApiError'
+import { extractApiErrorMessage, useApiError } from '~/composables/useApiError'
 import { useSchema } from '~/composables/useSchema'
 import { useCedarWasm } from '~/composables/useCedarWasm'
 import { useDebounce } from '~/composables/useDebounce'
@@ -128,10 +128,6 @@ watch(showCreateModal, (isOpen) => {
 
 watch(showTemplateModal, async (isOpen) => {
   if (isOpen) {
-    console.log('[RULES] Template modal opened, fetching templates...', { 
-      templatesCount: templates.value.length, 
-      isLoading: templatesLoading.value 
-    })
     if (templates.value.length === 0 && !templatesLoading.value) {
       await fetchTemplates()
     }
@@ -139,40 +135,30 @@ watch(showTemplateModal, async (isOpen) => {
 })
 
 const fetchTemplates = async () => {
-  console.log('[RULES] fetchTemplates called')
   templatesLoading.value = true
   try {
     const { getAuthHeader } = useAdminAuth()
     const authHeader = getAuthHeader()
-    
-    console.log('[RULES] Auth header:', authHeader ? 'present' : 'missing')
-    
+
     if (!authHeader) {
-      console.warn('[RULES] No auth header, skipping template fetch')
       templatesLoading.value = false
       return
     }
     
-    console.log('[RULES] Fetching from /api/policies/templates')
     const response = await fetch('/api/policies/templates', {
       headers: {
         'Authorization': authHeader
       }
     })
-    
-    console.log('[RULES] Response status:', response.status, response.ok)
-    
+
     if (response.ok) {
       const data = await response.json()
-      console.log('[RULES] Templates received:', data.templates?.length || 0)
       templates.value = data.templates || []
     } else {
       const error = await response.json().catch(() => ({ error: response.statusText }))
-      console.error('[RULES] Response error:', error)
-      throw new Error(error.error || 'Failed to load templates')
+      throw new Error(extractApiErrorMessage({ data: error }, 'Failed to load templates'))
     }
   } catch (error: any) {
-    console.error('[RULES] Failed to fetch templates:', error)
     toast.error(getUserMessage(error))
   } finally {
     templatesLoading.value = false
@@ -200,7 +186,6 @@ const useTemplate = async (template: PolicyTemplate) => {
 }
 
 const handleOpenTemplateModal = async () => {
-  console.log('[RULES] Template button clicked')
   showTemplateModal.value = true
   if (templates.value.length === 0 && !templatesLoading.value) {
     await fetchTemplates()
@@ -268,7 +253,6 @@ onMounted(async () => {
       await nextTick()
       validatePolicy(parsedId ? formatPolicyWithId(parsedId, newRule.policy) : policyText)
     } catch (e: any) {
-      console.error('[RULES] Failed to load policy from URL:', e)
       toast.error(getUserMessage(e))
     }
   }
@@ -314,7 +298,7 @@ const validatePolicy = async (policyText: string) => {
     isValidating.value = false
   }
 
-  // Push errors as Monaco markers
+
   await setPolicyMarkers(validationErrors.value)
 }
 
@@ -373,7 +357,7 @@ const onPolicyBlur = async () => {
   }
 }
 
-// ── Monaco Editor for policy ──
+
 const monacoEditor = useMonacoEditor()
 const policyEditorInstance = shallowRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
 const policyCursorPos = ref({ line: 1, column: 1 })
@@ -415,17 +399,17 @@ const onPolicyEditorLoad = (editor: Monaco.editor.IStandaloneCodeEditor) => {
   policyEditorInstance.value = editor
   monacoEditor.setTheme()
 
-  // Track cursor position
+
   editor.onDidChangeCursorPosition(({ position }) => {
     policyCursorPos.value = { line: position.lineNumber, column: position.column }
   })
 
-  // Validate existing content on mount
+
   if (newRule.policy.trim()) {
     validatePolicy(newRule.policy)
   }
 
-  // Listen for content changes
+
   editor.onDidChangeModelContent(() => {
     const value = editor.getValue()
     newRule.policy = value
@@ -433,14 +417,14 @@ const onPolicyEditorLoad = (editor: Monaco.editor.IStandaloneCodeEditor) => {
   })
 }
 
-// Monitor marker changes to sync hasError state
+
 const onPolicyMarkerChanges = async (editor: Monaco.editor.IStandaloneCodeEditor) => {
   const monaco = await useMonaco()
   const model = editor.getModel()
   if (monaco && model) {
     monaco.editor.onDidChangeMarkers((uris: Monaco.Uri[]) => {
       if (uris.some((uri: Monaco.Uri) => uri.toString() === model.uri.toString())) {
-        // Marker state is already tracked via validationErrors ref
+
       }
     })
   }
@@ -699,7 +683,7 @@ const formatValidationMessage = (message: string) => {
           <input 
             v-model="searchQuery"
             type="text"
-            placeholder="Search rules..."
+            placeholder="Search policies..."
             class="input pl-10"
           />
           <button
@@ -739,7 +723,7 @@ const formatValidationMessage = (message: string) => {
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          Create Rule
+          Create Policy
         </UiButton>
       </div>
     </div>
@@ -762,11 +746,11 @@ const formatValidationMessage = (message: string) => {
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
-        Create Rule
+        Create Policy
       </UiButton>
     </div>
 
-    <!-- Rules Table -->
+    <!-- Policies Table -->
     <UiTable 
       :columns="columns" 
       :data="rules" 
@@ -777,7 +761,7 @@ const formatValidationMessage = (message: string) => {
       :total-items="totalRules"
       :sort-by="sortBy"
       :sort-order="sortOrder"
-      :empty-message="searchQuery || filterEffect ? 'No rules match your search criteria.' : 'No rules found. Create your first rule to get started.'"
+      :empty-message="searchQuery || filterEffect ? 'No policies match your search criteria.' : 'No policies found. Create your first policy to get started.'"
       @update:current-page="currentPage = $event"
       @update:items-per-page="itemsPerPage = $event"
       @update:sort="handleSort"
@@ -787,7 +771,7 @@ const formatValidationMessage = (message: string) => {
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          Create Rule
+          Create Policy
         </UiButton>
         <UiButton v-if="canGeneratePolicyWithAI && !searchQuery" @click="showAIChatModal = true">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -833,7 +817,7 @@ const formatValidationMessage = (message: string) => {
             v-if="canUpdatePolicy"
             @click="handleEditRule(row)"
             class="icon-btn text-[rgb(var(--text-muted))] hover:text-indigo-500"
-            title="Edit rule"
+            title="Edit policy"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -843,7 +827,7 @@ const formatValidationMessage = (message: string) => {
             v-if="canDeletePolicy"
             @click="confirmDelete(row)"
             class="icon-btn text-[rgb(var(--text-muted))] hover:text-red-500"
-            title="Delete rule"
+            title="Delete policy"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -854,7 +838,7 @@ const formatValidationMessage = (message: string) => {
     </UiTable>
 
     <!-- Create Modal -->
-    <UiModal v-model="showCreateModal" title="Create Rule">
+    <UiModal v-model="showCreateModal" title="Create Policy">
       <form @submit.prevent="handleCreateRule" class="space-y-5">
         <div>
           <label class="block text-xs font-semibold text-[rgb(var(--text-secondary))] mb-1.5">Description</label>
@@ -879,8 +863,8 @@ const formatValidationMessage = (message: string) => {
         <!-- Status Toggle -->
         <div class="flex items-center justify-between p-4 rounded-lg border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface-elevated))]">
           <div>
-            <label class="block text-sm font-semibold text-[rgb(var(--text))] mb-0.5">Rule Status</label>
-            <p class="text-xs text-[rgb(var(--text-muted))]">Enable or disable this rule</p>
+            <label class="block text-sm font-semibold text-[rgb(var(--text))] mb-0.5">Policy Status</label>
+            <p class="text-xs text-[rgb(var(--text-muted))]">Enable or disable this policy</p>
           </div>
           <label class="relative inline-flex items-center cursor-pointer">
             <input 
@@ -946,7 +930,7 @@ const formatValidationMessage = (message: string) => {
             Cancel
           </UiButton>
           <UiButton type="submit" :loading="loading" :disabled="validationErrors.length > 0">
-            Create Rule
+            Create Policy
           </UiButton>
         </div>
       </form>
@@ -1003,7 +987,7 @@ const formatValidationMessage = (message: string) => {
     </UiModal>
 
     <!-- Edit Modal -->
-    <UiModal v-model="showEditModal" title="Edit Rule">
+    <UiModal v-model="showEditModal" title="Edit Policy">
       <form @submit.prevent="handleUpdateRule" class="space-y-5">
         <div>
           <label class="block text-xs font-semibold text-[rgb(var(--text-secondary))] mb-1.5">Description</label>
@@ -1028,8 +1012,8 @@ const formatValidationMessage = (message: string) => {
         <!-- Status Toggle -->
         <div class="flex items-center justify-between p-4 rounded-lg border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface-elevated))]">
           <div>
-            <label class="block text-sm font-semibold text-[rgb(var(--text))] mb-0.5">Rule Status</label>
-            <p class="text-xs text-[rgb(var(--text-muted))]">Enable or disable this rule</p>
+            <label class="block text-sm font-semibold text-[rgb(var(--text))] mb-0.5">Policy Status</label>
+            <p class="text-xs text-[rgb(var(--text-muted))]">Enable or disable this policy</p>
           </div>
           <label class="relative inline-flex items-center cursor-pointer">
             <input 
@@ -1095,18 +1079,18 @@ const formatValidationMessage = (message: string) => {
             Cancel
           </UiButton>
           <UiButton type="submit" :loading="loading" :disabled="validationErrors.length > 0">
-            Update Rule
+            Update Policy
           </UiButton>
         </div>
       </form>
     </UiModal>
 
     <!-- Delete Confirmation Modal -->
-    <UiModal v-model="showDeleteModal" title="Delete Rule" size="sm">
+    <UiModal v-model="showDeleteModal" title="Delete Policy" size="sm">
       <div class="space-y-4">
         <div class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800">
           <p class="text-sm text-red-700 dark:text-red-300">
-            Are you sure you want to delete this rule? This action cannot be undone.
+            Are you sure you want to delete this policy? This action cannot be undone.
           </p>
         </div>
         <div class="flex gap-3 justify-end">

@@ -25,7 +25,7 @@ const toggle = () => {
 </script>
 
 <template>
-  <div class="space-y-2">
+  <div class="space-y-2 ">
     <label 
       :for="toggleId" 
       class="block text-sm font-medium text-[rgb(var(--text))] cursor-pointer"

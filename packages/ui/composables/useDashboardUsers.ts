@@ -57,7 +57,6 @@ export const useDashboardUsers = () => {
       users.value = response.users
       return { data: response.users, total: response.total }
     } catch (error: any) {
-      console.error('[DASHBOARD USERS] Load error:', error)
       throw new Error(getUserMessage(error))
     } finally {
       loading.value = false

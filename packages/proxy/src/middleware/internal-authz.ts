@@ -103,7 +103,6 @@ export function requireInternalAuthz(
       next()
       return
     }
-    console.log(`[INTERNAL AUTHZ] Route not in mapping (allowing): ${method} ${fullPath}`)
     next()
     return
   }
@@ -134,7 +133,6 @@ export function requireInternalAuthz(
       })
 
       if (!result.allowed) {
-        console.log(`[INTERNAL AUTHZ] Denied: ${principalUserId} -> ${action} on ${resourceType}`)
         res.status(403).json({
           error: 'Access denied',
           code: 'ACCESS_DENIED',

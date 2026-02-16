@@ -78,7 +78,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (to.path === '/' && to.query.create === 'true' && to.query.policy) {
 
         return navigateTo({
-            path: '/rules',
+            path: '/policies',
             query: {
                 create: to.query.create,
                 policy: to.query.policy

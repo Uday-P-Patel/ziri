@@ -9,7 +9,6 @@ import { parsePolicyId } from '../utils/cedar-policy.js'
 const router: Router = Router()
 
 router.get('/', requireAdmin, async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const {
       search,
@@ -363,7 +362,6 @@ router.delete('/', requireAdmin, async (req: Request, res: Response) => {
 })
 
 router.get('/templates', requireAdmin, async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const templates = getPolicyTemplates()
     

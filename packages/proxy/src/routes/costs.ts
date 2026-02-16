@@ -1,5 +1,3 @@
- 
-
 import { Router, type Request, type Response } from 'express'
 import { requireAdmin } from '../middleware/auth.js'
 import { costTrackingService } from '../services/cost-tracking-service.js'
@@ -10,7 +8,6 @@ router.use(requireAdmin)
 
  
 router.get('/summary', async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const {
       executionKey,

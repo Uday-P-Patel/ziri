@@ -435,6 +435,25 @@
   );
 }
 
+/* Search highlight styles */
+.search-highlight {
+  background-color: rgb(251 191 36 / 0.4); /* amber-400 with opacity */
+  color: inherit;
+  padding: 0.125rem 0.125rem;
+  border-radius: 0.125rem;
+  font-weight: 600;
+}
+
+.dark .search-highlight {
+  background-color: rgb(251 191 36 / 0.3);
+}
+
+/* Ensure highlighted text is readable and accessible */
+.search-highlight:focus {
+  outline: 2px solid rgb(251 191 36);
+  outline-offset: 1px;
+}
+
 /* Background texture pattern */
 .bg-texture {
   position: relative;

@@ -8,7 +8,6 @@ const router: Router = Router()
 router.use(requireAdmin)
 
 router.get('/', async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const {
       search,
@@ -42,7 +41,6 @@ router.get('/', async (req: Request, res: Response) => {
 })
 
 router.get('/:name', async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const { name } = req.params
     const provider = providerService.getProvider(name)

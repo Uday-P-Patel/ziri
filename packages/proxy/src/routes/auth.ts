@@ -1,6 +1,3 @@
- 
- 
-
 import { Router, type Request, type Response } from 'express'
 import { getDatabase } from '../db/index.js'
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, hashRefreshToken, type TokenPayload } from '../utils/jwt.js'
@@ -73,7 +70,7 @@ router.post('/admin/login', async (req: Request, res: Response) => {
       const tokenPayload: TokenPayload = {
         userId: user.id,
         email: decryptedEmail,
-        role: user.role, // Use role from DB
+        role: user.role,
         name: user.name || 'Administrator'
       }
       
@@ -102,7 +99,7 @@ router.post('/admin/login', async (req: Request, res: Response) => {
         user: {
           userId: user.id,
           email: decryptedEmail,
-          role: user.role, // Use role from DB
+          role: user.role,
           name: user.name || 'Administrator'
         }
       })
@@ -113,11 +110,6 @@ router.post('/admin/login', async (req: Request, res: Response) => {
  
     if (identifier === 'ziri') {
       const rootKey = getRootKey()
-      console.log(`[AUTH] Login attempt for ziri`)
-      console.log(`[AUTH] Root key available: ${!!rootKey}`)
-      console.log(`[AUTH] Root key length: ${rootKey?.length || 0}`)
-      console.log(`[AUTH] Password length: ${password?.length || 0}`)
-      console.log(`[AUTH] Password match: ${rootKey && password === rootKey}`)
       if (rootKey && password === rootKey) {
         const tokenPayload: TokenPayload = {
           userId: 'ziri',

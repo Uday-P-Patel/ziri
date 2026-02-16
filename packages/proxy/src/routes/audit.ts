@@ -6,7 +6,6 @@ const router: Router = Router()
 router.use(requireAdmin)
 
 router.get('/', async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const {
       authId,
@@ -56,7 +55,6 @@ router.get('/', async (req: Request, res: Response) => {
 })
 
 router.get('/statistics', async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const { startDate, endDate } = req.query
 

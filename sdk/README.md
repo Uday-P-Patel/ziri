@@ -12,7 +12,7 @@ npm install @ziri/sdk
 import { UserSDK } from '@ziri/sdk'
 
 const sdk = new UserSDK({
-  apiKey: 'sk-zs-your-api-key-here',
+  apiKey: 'ziri-your-user-id-your-key-hash',
   proxyUrl: 'http://localhost:3100'
 })
 
@@ -33,8 +33,8 @@ console.log(response.choices[0].message.content)
 
 ```typescript
 const sdk = new UserSDK({
-  apiKey: 'sk-zs-your-api-key-here',  // Required
-  proxyUrl: 'http://localhost:3100'   // Optional, defaults to process.env.ZIRI_PROXY_URL
+  apiKey: 'ziri-your-user-id-your-key-hash',
+  proxyUrl: 'http://localhost:3100'
 })
 ```
 
@@ -68,7 +68,7 @@ const response = await sdk.chatCompletions({
 })
 ```
 
-Returns a Promise with the LLM provider's response format (same as OpenAI/Anthropic APIs).
+Returns a Promise with the provider response JSON. Errors are thrown as standard `Error` objects.
 
 ### `embeddings(options)`
 
@@ -135,32 +135,7 @@ try {
     messages: [{ role: 'user', content: 'Hello!' }]
   })
 } catch (error: any) {
-  if (error.status === 401) {
-    console.error('Invalid API key')
-  } else if (error.status === 403) {
-    console.error('Request not authorized by policy')
-  } else if (error.status === 429) {
-    console.error('Rate limit exceeded')
-  } else {
-    console.error('Request failed:', error.message)
-  }
-}
-```
-
-### Streaming (if supported)
-
-The SDK supports streaming responses when the proxy supports it:
-
-```typescript
-const stream = await sdk.chatCompletions({
-  provider: 'openai',
-  model: 'gpt-4',
-  messages: [{ role: 'user', content: 'Tell me a story' }],
-  stream: true
-})
-
-for await (const chunk of stream) {
-  process.stdout.write(chunk.choices[0]?.delta?.content || '')
+  console.error('Request failed:', error.message)
 }
 ```
 
@@ -170,7 +145,7 @@ The SDK is a thin wrapper around HTTP requests to the ZIRI proxy server. It:
 
 1. Sends requests to the proxy's API endpoints (`/api/chat/completions`, etc.)
 2. Includes your API key in the `X-API-Key` header
-3. Returns the provider's response (same format as calling OpenAI/Anthropic directly)
+3. Returns the provider response JSON
 
 All authorization, rate limiting, and cost tracking happens on the proxy server. The SDK just makes it easier to call the proxy from your code.
 

@@ -3,6 +3,7 @@
 import { useAdminAuthStore } from '~/stores/admin-auth'
 import { useUserAuthStore } from '~/stores/user-auth'
 import { useToast } from './useToast'
+import { extractApiErrorMessage } from './useApiError'
 
 export function useAuth() {
   const adminAuthStore = useAdminAuthStore()
@@ -58,14 +59,12 @@ export function useAuth() {
           const errorBody = await adminResponse.json().catch(() => ({}))
           const code = errorBody.code as string | undefined
           if (adminResponse.status === 403 || code === 'ACCOUNT_DISABLED') {
-            throw new Error(errorBody.error || 'Admin account is disabled')
+            throw new Error(extractApiErrorMessage({ data: errorBody }, 'Admin account is disabled'))
           }
 
         }
       } catch (error: any) {
 
-
-        console.error('[AUTH] Admin login attempt failed:', error)
       }
       
 
@@ -79,7 +78,7 @@ export function useAuth() {
       
       if (!userResponse.ok) {
         const error = await userResponse.json().catch(() => ({ error: userResponse.statusText }))
-        throw new Error(error.error || 'Invalid credentials')
+        throw new Error(extractApiErrorMessage({ data: error }, 'Invalid credentials'))
       }
       
       const userData = await userResponse.json()
@@ -110,7 +109,7 @@ export function useAuth() {
       
       return true
     } catch (error: any) {
-      const errorMessage = error.message || 'Login failed. Please check your credentials.'
+      const errorMessage = extractApiErrorMessage(error, 'Login failed. Please check your credentials.')
       adminAuthStore.setError(errorMessage)
       userAuthStore.setError(errorMessage)
       toast.error(errorMessage)

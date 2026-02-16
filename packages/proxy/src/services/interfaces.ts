@@ -1,5 +1,3 @@
- 
-
 import type { Entity } from '../types/entity.js'
 
  

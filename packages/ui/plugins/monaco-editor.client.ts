@@ -1,17 +1,17 @@
 import { shikiToMonaco } from "@shikijs/monaco";
 import { createHighlighter } from "shiki";
 
-// Load syntax definitions from external files
+
 async function loadSyntaxDefinitions() {
 	try {
-		// Use dynamic imports to load JSON files from public directory
+
 		const [cedarSyntax, cedarSchemaSyntax, jsonSyntax] = await Promise.all([
 			$fetch("/syntax/cedar.tmLanguage.json"),
 			$fetch("/syntax/cedarschema.tmLanguage.json"),
 			$fetch("/syntax/json.tmLanguage.json"),
 		]);
 
-		// Convert loaded JSON to the format expected by Shiki
+
 		const cedar = {
 			scopeName: "source.cedar",
 			patterns: [],
@@ -39,7 +39,7 @@ async function loadSyntaxDefinitions() {
 		return { cedar, cedarSchema, json };
 	} catch (error) {
 		console.error("Failed to load syntax definitions:", error);
-		// Fallback to a minimal definition if loading fails
+
 		return {
 			cedar: {
 				name: "cedar-policy",
@@ -68,28 +68,28 @@ export default defineNuxtPlugin(async () => {
 
 	if (!monaco) return;
 
-	// Load syntax definitions from external files
+
 	const { cedar, cedarSchema, json } = await loadSyntaxDefinitions();
 
-	// Create Shiki highlighter with only the themes and languages we need
+
 	const highlighter = await createHighlighter({
 		langs: [cedar, cedarSchema, json],
 		themes: ["catppuccin-latte", "catppuccin-mocha"],
 	});
 
-	// Register custom languages in Monaco
+
 	monaco.languages.register({ id: "cedar-policy" });
 	monaco.languages.register({ id: "cedar-schema" });
 	monaco.languages.register({ id: "custom-json" });
 
-	// Apply Shiki highlighting and register themes in Monaco
+
 	shikiToMonaco(highlighter, monaco);
 
-	// Apply initial theme based on current dark/light mode
+
 	const { getThemeName } = useMonacoEditor();
 	monaco.editor.setTheme(getThemeName());
 
-	// ── Cedar Policy language configuration ──
+
 
 	monaco.languages.setLanguageConfiguration("cedar-policy", {
 		comments: {
@@ -242,7 +242,7 @@ export default defineNuxtPlugin(async () => {
 		},
 	});
 
-	// ── Cedar Schema language configuration ──
+
 
 	monaco.languages.setLanguageConfiguration("cedar-schema", {
 		comments: {

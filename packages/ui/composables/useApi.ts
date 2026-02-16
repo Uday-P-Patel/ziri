@@ -25,7 +25,6 @@ export function useApi() {
             query?: Record<string, any>
         } = {}
     ): Promise<T> => {
-        console.log('[API] Making request:', options.method || 'GET', endpoint)
         loading.value = true
         error.value = null
 
@@ -45,13 +44,10 @@ export function useApi() {
                 throw new Error(errorMsg)
             }
 
-            console.log('[API] Auth header obtained:', authHeader ? 'yes' : 'no')
             const config = useRuntimeConfig()
-            // const baseUrl = config.public.backendUrl || configStore.backendUrl
-            // Use backendUrl from runtime config; empty string means same-origin (relative URLs)
+
+
             const baseUrl = config.public.backendUrl ?? ''
-            console.log('[API] Base URL:', baseUrl)
-            console.log('[API] Project ID:', configStore.projectId)
 
             const headers: Record<string, string> = {
                 'Content-Type': 'application/json',
@@ -63,12 +59,6 @@ export function useApi() {
             }
 
             const url = `${baseUrl}${endpoint}`
-            console.log('[API] Full URL:', url)
-            console.log('[API] Request options:', {
-                method: options.method || 'GET',
-                hasBody: !!options.body,
-                hasQuery: !!options.query
-            })
 
             const response = await $fetch<T>(url, {
                 method: options.method || 'GET',
@@ -77,11 +67,9 @@ export function useApi() {
                 query: options.query
             })
 
-            console.log('[API] ✅ Request successful')
             return response
         } catch (e: any) {
             const errorMsg = e.data?.message || e.message || 'API request failed'
-            console.error('[API] ❌ Request failed:', errorMsg, e)
             error.value = errorMsg
 
             if (process.client) {
@@ -91,8 +79,8 @@ export function useApi() {
                         const { logout } = useAuth()
                         await logout()
                         await navigateTo('/login')
-                    } catch (authError) {
-                        console.error('[API] Failed to handle auth error:', authError)
+                    } catch {
+
                     }
                 }
             }

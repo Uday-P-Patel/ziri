@@ -81,13 +81,13 @@ watch(
 
 const { isConnected: isSseConnected } = useRealtimeUpdates({
   onInternalAuditLogCreated: () => {
-    // Only write operations are logged now, so refresh if on first page
+
     if (currentPage.value === 1) {
       fetchLogs()
     }
   },
   onBatchUpdate: () => {
-    // Only write operations are logged now, so refresh if on first page
+
     if (currentPage.value === 1) {
       fetchLogs()
     }

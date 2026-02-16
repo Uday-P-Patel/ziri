@@ -1,7 +1,8 @@
 import { useRulesStore } from '~/stores/rules'
 import { useToast } from './useToast'
 import { useAdminAuth } from './useAdminAuth'
-import { useApiError } from './useApiError'
+import { extractApiErrorMessage, useApiError } from './useApiError'
+import { runWithAuth } from './useApiCall'
 import type { Policy, CreatePolicyInput } from '~/types/cedar'
 import type { PoliciesResponse } from '~/types/api'
 import { extractPolicyEffect } from '~/utils/cedar'
@@ -20,15 +21,14 @@ export function useRules() {
         sortBy?: string | null
         sortOrder?: 'asc' | 'desc' | null
     }) => {
-        rulesStore.loading = true
-        rulesStore.error = null
         try {
-            const authHeader = getAuthHeader()
-            if (!authHeader) {
-                throw new Error('Please login first')
-            }
-            
- 
+            return await runWithAuth({
+                setLoading: (value) => { rulesStore.loading = value },
+                setError: (value) => { rulesStore.error = value },
+                clearErrorOnStart: true,
+                getAuthHeader,
+                onError: (e) => { toast.error(getUserMessage(e)) }
+            }, async (authHeader) => {
             const queryParams = new URLSearchParams()
             if (params?.search) queryParams.set('search', params.search)
             if (params?.limit) queryParams.set('limit', params.limit.toString())
@@ -48,7 +48,7 @@ export function useRules() {
             
             if (!response.ok) {
                 const error = await response.json().catch(() => ({ error: response.statusText }))
-                throw new Error(error.error || 'Failed to load policies')
+                throw new Error(extractApiErrorMessage({ data: error }, 'Failed to load policies'))
             }
             
             const data: PoliciesResponse = await response.json()
@@ -62,25 +62,21 @@ export function useRules() {
 
             rulesStore.rules = rules
             return { rules, total: (data as any).total || rules.length }
+            })
         } catch (e: any) {
-            rulesStore.error = e.message
-            toast.error(getUserMessage(e))
             throw e
-        } finally {
-            rulesStore.loading = false
         }
     }
 
     const createRule = async (input: CreatePolicyInput) => {
-        rulesStore.loading = true
-        rulesStore.error = null
         try {
-            const authHeader = getAuthHeader()
-            if (!authHeader) {
-                throw new Error('Please login first')
-            }
-            
- 
+            await runWithAuth({
+                setLoading: (value) => { rulesStore.loading = value },
+                setError: (value) => { rulesStore.error = value },
+                clearErrorOnStart: true,
+                getAuthHeader,
+                onError: (e) => { toast.error(getUserMessage(e)) }
+            }, async (authHeader) => {
             const response = await fetch('/api/policies', {
                 method: 'POST',
                 headers: {
@@ -95,31 +91,26 @@ export function useRules() {
             
             if (!response.ok) {
                 const error = await response.json().catch(() => ({ error: response.statusText }))
-                throw new Error(error.error || 'Failed to create policy')
+                throw new Error(extractApiErrorMessage({ data: error }, 'Failed to create policy'))
             }
 
- 
             await listRules()
             toast.success('Rule created successfully')
+            })
         } catch (e: any) {
-            rulesStore.error = e.message
-            toast.error(getUserMessage(e))
             throw e
-        } finally {
-            rulesStore.loading = false
         }
     }
 
     const updateRule = async (oldPolicy: string, input: CreatePolicyInput) => {
-        rulesStore.loading = true
-        rulesStore.error = null
         try {
-            const authHeader = getAuthHeader()
-            if (!authHeader) {
-                throw new Error('Please login first')
-            }
-            
- 
+            await runWithAuth({
+                setLoading: (value) => { rulesStore.loading = value },
+                setError: (value) => { rulesStore.error = value },
+                clearErrorOnStart: true,
+                getAuthHeader,
+                onError: (e) => { toast.error(getUserMessage(e)) }
+            }, async (authHeader) => {
             const response = await fetch('/api/policies', {
                 method: 'PUT',
                 headers: {
@@ -135,31 +126,26 @@ export function useRules() {
             
             if (!response.ok) {
                 const error = await response.json().catch(() => ({ error: response.statusText }))
-                throw new Error(error.error || 'Failed to update policy')
+                throw new Error(extractApiErrorMessage({ data: error }, 'Failed to update policy'))
             }
 
- 
             await listRules()
             toast.success('Rule updated successfully')
+            })
         } catch (e: any) {
-            rulesStore.error = e.message
-            toast.error(getUserMessage(e))
             throw e
-        } finally {
-            rulesStore.loading = false
         }
     }
 
     const deleteRule = async (policy: string) => {
-        rulesStore.loading = true
-        rulesStore.error = null
         try {
-            const authHeader = getAuthHeader()
-            if (!authHeader) {
-                throw new Error('Please login first')
-            }
-            
- 
+            await runWithAuth({
+                setLoading: (value) => { rulesStore.loading = value },
+                setError: (value) => { rulesStore.error = value },
+                clearErrorOnStart: true,
+                getAuthHeader,
+                onError: (e) => { toast.error(getUserMessage(e)) }
+            }, async (authHeader) => {
             const response = await fetch('/api/policies', {
                 method: 'DELETE',
                 headers: {
@@ -171,29 +157,26 @@ export function useRules() {
             
             if (!response.ok) {
                 const error = await response.json().catch(() => ({ error: response.statusText }))
-                throw new Error(error.error || 'Failed to delete policy')
+                throw new Error(extractApiErrorMessage({ data: error }, 'Failed to delete policy'))
             }
 
- 
             await listRules()
             toast.success('Rule deleted successfully')
+            })
         } catch (e: any) {
-            rulesStore.error = e.message
-            toast.error(getUserMessage(e))
             throw e
-        } finally {
-            rulesStore.loading = false
         }
     }
 
     const setRuleStatus = async (policy: string, isActive: boolean) => {
-        rulesStore.loading = true
-        rulesStore.error = null
         try {
-            const authHeader = getAuthHeader()
-            if (!authHeader) {
-                throw new Error('Please login first')
-            }
+            await runWithAuth({
+                setLoading: (value) => { rulesStore.loading = value },
+                setError: (value) => { rulesStore.error = value },
+                clearErrorOnStart: true,
+                getAuthHeader,
+                onError: (e) => { toast.error(getUserMessage(e)) }
+            }, async (authHeader) => {
 
             const response = await fetch('/api/policies/status', {
                 method: 'PATCH',
@@ -206,17 +189,14 @@ export function useRules() {
 
             if (!response.ok) {
                 const error = await response.json().catch(() => ({ error: response.statusText }))
-                throw new Error(error.error || 'Failed to update policy status')
+                throw new Error(extractApiErrorMessage({ data: error }, 'Failed to update policy status'))
             }
 
             await listRules()
             toast.success(`Rule ${isActive ? 'activated' : 'deactivated'} successfully`)
+            })
         } catch (e: any) {
-            rulesStore.error = e.message
-            toast.error(getUserMessage(e))
             throw e
-        } finally {
-            rulesStore.loading = false
         }
     }
 

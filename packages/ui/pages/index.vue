@@ -106,7 +106,7 @@ const fetchCostStats = async () => {
 
     if (costResponse.ok) {
       const costData = await costResponse.json()
-      // Sum up all today's data if grouped, or use single entry
+
       const todayDataArray = costData.data || []
       const todayTotalCost = todayDataArray.reduce((sum: number, item: any) => sum + (item.total_cost || 0), 0)
       const todayTotalRequests = todayDataArray.reduce((sum: number, item: any) => sum + (item.request_count || 0), 0)

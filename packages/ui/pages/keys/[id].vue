@@ -191,7 +191,7 @@ const handleDeleteKey = async () => {
     showDeleteKeyModal.value = false
     router.push('/keys')
   } catch (e) {
-    // Toast handled by deleteKeyById
+
   } finally {
     isDeletingKey.value = false
   }

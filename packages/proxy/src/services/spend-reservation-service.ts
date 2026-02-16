@@ -1,12 +1,6 @@
 import type Database from 'better-sqlite3'
 import { getDatabase } from '../db/index.js'
-
-interface CedarDecimalValue {
-  __extn: {
-    fn: 'decimal'
-    arg: string
-  }
-}
+import { createDecimalValue, parseDecimal, type CedarDecimalValue } from '../utils/cedar.js'
 
 interface UserKeyEntity {
   uid: {
@@ -38,13 +32,6 @@ export class SpendReservationService {
     this.db = db || getDatabase()
   }
 
-  private parseDecimal(value: any): number {
-    if (!value) return 0
-    if (typeof value === 'string') return parseFloat(value) || 0
-    if (value.__extn && value.__extn.arg) return parseFloat(value.__extn.arg) || 0
-    return 0
-  }
-
   async reserveEstimatedSpend(
     userKeyEntity: UserKeyEntity,
     userKeyId: string,
@@ -52,18 +39,11 @@ export class SpendReservationService {
   ): Promise<SpendReservationResult> {
     const attrs = userKeyEntity.attrs
 
-    const currentDailySpendFullPrecision = this.parseDecimal(attrs.current_daily_spend)
-    const currentMonthlySpendFullPrecision = this.parseDecimal(attrs.current_monthly_spend)
+    const currentDailySpendFullPrecision = parseDecimal(attrs.current_daily_spend)
+    const currentMonthlySpendFullPrecision = parseDecimal(attrs.current_monthly_spend)
 
     const reservedDailySpend = currentDailySpendFullPrecision + estimatedCost
     const reservedMonthlySpend = currentMonthlySpendFullPrecision + estimatedCost
-
-    const createDecimalValue = (value: string): CedarDecimalValue => ({
-      __extn: {
-        fn: 'decimal',
-        arg: value,
-      },
-    })
 
     const toFour = (value: number): CedarDecimalValue =>
       createDecimalValue(value.toFixed(4))
@@ -101,13 +81,10 @@ export class SpendReservationService {
     const row = entityStmt.get(userKeyId) as { ejson: string } | undefined
     if (!row) return
     const entity: UserKeyEntity = JSON.parse(row.ejson)
-    const currentDaily = this.parseDecimal(entity.attrs.current_daily_spend)
-    const currentMonthly = this.parseDecimal(entity.attrs.current_monthly_spend)
+    const currentDaily = parseDecimal(entity.attrs.current_daily_spend)
+    const currentMonthly = parseDecimal(entity.attrs.current_monthly_spend)
     const newDaily = Math.max(0, currentDaily - amountToRelease)
     const newMonthly = Math.max(0, currentMonthly - amountToRelease)
-    const createDecimalValue = (value: string): CedarDecimalValue => ({
-      __extn: { fn: 'decimal', arg: value },
-    })
     const toFour = (value: number) => createDecimalValue(value.toFixed(4))
     const updatedEntity: UserKeyEntity = {
       ...entity,

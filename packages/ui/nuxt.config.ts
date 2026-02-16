@@ -14,11 +14,11 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      // backendUrl: process.env.NUXT_PUBLIC_BACKEND_URL || 'http://localhost:4000',
-      // In dev: backendUrl is empty so client-side API calls go to same origin (Nuxt dev server on :3100)
-      // Nuxt server routes then forward requests to the Express proxy server via proxyUrl
+
+
+
       backendUrl: process.env.NUXT_PUBLIC_BACKEND_URL || '',
-      // Express proxy runs on port 3100 (default); Nuxt dev server runs on 3000
+
       proxyUrl: process.env.NUXT_PUBLIC_PROXY_URL || 'http://localhost:3100'
     }
   },
@@ -32,7 +32,7 @@ export default defineNuxtConfig({
         { name: 'description', content: 'ZIRI Management Interface with Cedar Authorization' }
       ],
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+        { rel: 'icon', type: 'image/png', href: '/logo/ziri.png' }
       ]
     }
   },

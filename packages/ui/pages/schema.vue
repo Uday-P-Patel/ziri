@@ -7,11 +7,13 @@ import { useApiError } from '~/composables/useApiError'
 import { formatDate } from '~/utils/formatters'
 import type { ValidationError } from '~/composables/useCedarWasm'
 import { useInternalAuth } from '~/composables/useInternalAuth'
+import { parseSchemaJson } from '~/utils/schema-explorer'
+import type { NormalizedSchema } from '~/utils/schema-explorer'
 import type * as Monaco from 'monaco-editor'
 
 const monacoEditor = useMonacoEditor();
 const configStore = useConfigStore()
-const { getSchema, updateSchema, lastSyncedAt, loading } = useSchema()
+const { getSchema, updateSchema, lastSyncedAt, loading, schema: schemaFromStore } = useSchema()
 const { schemaToJson, schemaToText, validateCedarSchema, validateJsonSchema } = useCedarWasm()
 const toast = useToast()
 const { checkAction } = useInternalAuth()
@@ -20,19 +22,26 @@ const { getUserMessage } = useApiError()
 const permissionsLoading = ref(true)
 const canUpdateSchema = ref(false)
 
- 
-const viewMode = ref<'json' | 'cedar'>('cedar')
+
+const activeTab = ref<'simplified' | 'json' | 'cedar'>('simplified')
+
+// ── Editor mode (derived from activeTab when not simplified) ─────────────────
+const viewMode = computed<'json' | 'cedar'>(() => {
+  return activeTab.value === 'json' ? 'json' : 'cedar'
+})
 const isEditing = ref(false)
 const isSaving = ref(false)
 
- 
 const schemaContent = ref('')
 const validationErrors = ref<ValidationError[]>([])
 const validationDebounceTimer = ref<NodeJS.Timeout | null>(null)
 
- 
-onMounted(async () => {
 
+const normalizedSchema = ref<NormalizedSchema | null>(null)
+const simplifiedError = ref<string | null>(null)
+
+
+onMounted(async () => {
   permissionsLoading.value = true
   try {
     const check = await checkAction('update_schema', 'schema')
@@ -47,35 +56,30 @@ onMounted(async () => {
     try {
       await loadSchema()
     } catch (e) {
- 
+
     }
   }
 })
 
- 
+
 const loadSchema = async () => {
   try {
- 
     const data = await getSchema(viewMode.value)
     
     if (viewMode.value === 'cedar') {
- 
       if (data.schemaCedarText) {
         schemaContent.value = data.schemaCedarText
       } else if (typeof data.schema === 'string') {
         schemaContent.value = data.schema
       } else {
- 
         schemaContent.value = await convertJsonToCedar(data.schemaJson || data.schema)
       }
     } else {
- 
       if (data.schemaJson) {
         schemaContent.value = JSON.stringify(data.schemaJson, null, 2)
       } else if (typeof data.schema === 'object') {
         schemaContent.value = JSON.stringify(data.schema, null, 2)
       } else {
- 
         const jsonSchema = await convertCedarToJson(data.schema)
         schemaContent.value = JSON.stringify(jsonSchema, null, 2)
       }
@@ -83,12 +87,46 @@ const loadSchema = async () => {
     
     isEditing.value = false
     validationErrors.value = []
+
+
+    await buildSimplifiedModel(data.schemaJson || (typeof data.schema === 'object' ? data.schema : null))
   } catch (e: any) {
     toast.error(getUserMessage(e))
   }
 }
 
- 
+const buildSimplifiedModel = async (schemaJsonFromApi?: any) => {
+  simplifiedError.value = null
+  try {
+    let jsonObj: any
+
+    if (schemaJsonFromApi != null && typeof schemaJsonFromApi === 'object') {
+      jsonObj = schemaJsonFromApi
+    } else if (activeTab.value === 'json' && schemaContent.value.trim()) {
+      jsonObj = JSON.parse(schemaContent.value)
+    } else if (schemaContent.value.trim()) {
+
+      const result = await schemaToJson(schemaContent.value)
+      if ('json' in result) {
+        normalizedSchema.value = parseSchemaJson(result.json)
+      } else {
+        simplifiedError.value = result.errors.map((e: any) => e.message).join(', ')
+        normalizedSchema.value = null
+      }
+      return
+    } else {
+      normalizedSchema.value = parseSchemaJson({})
+      return
+    }
+
+    normalizedSchema.value = parseSchemaJson(jsonObj)
+  } catch (e: any) {
+    simplifiedError.value = e.message || 'Failed to build simplified view'
+    normalizedSchema.value = null
+  }
+}
+
+
 const convertJsonToCedar = async (jsonSchema: any): Promise<string> => {
   try {
     const jsonStr = typeof jsonSchema === 'string' ? jsonSchema : JSON.stringify(jsonSchema)
@@ -105,7 +143,6 @@ const convertJsonToCedar = async (jsonSchema: any): Promise<string> => {
   }
 }
 
- 
 const convertCedarToJson = async (cedarText: string): Promise<any> => {
   try {
     const result = await schemaToJson(cedarText)
@@ -120,7 +157,7 @@ const convertCedarToJson = async (cedarText: string): Promise<any> => {
   }
 }
 
- 
+
 const validateSchema = async () => {
   if (!schemaContent.value.trim()) {
     validationErrors.value = []
@@ -129,16 +166,14 @@ const validateSchema = async () => {
   }
   
   try {
-    if (viewMode.value === 'cedar') {
+    if (activeTab.value === 'cedar') {
       const result = await validateCedarSchema(schemaContent.value)
       validationErrors.value = result.errors
-    } else {
-      // JSON mode: first check if JSON is parseable
+    } else if (activeTab.value === 'json') {
       let parsed: any
       try {
         parsed = JSON.parse(schemaContent.value)
       } catch (parseError: any) {
-        // Extract position from the JSON parse error message if possible
         const posMatch = parseError.message.match(/position\s+(\d+)/i)
         const sourceLocations = posMatch
           ? [{ start: parseInt(posMatch[1]), end: parseInt(posMatch[1]) + 1 }]
@@ -153,8 +188,6 @@ const validateSchema = async () => {
         return
       }
 
-      // JSON is valid syntax — validate as Cedar schema with a timeout
-      // to prevent WASM from hanging the page on complex/invalid schemas
       try {
         const result = await Promise.race([
           validateJsonSchema(parsed),
@@ -179,11 +212,9 @@ const validateSchema = async () => {
     }]
   }
 
-  // Push validation errors as Monaco editor markers (red squiggly underlines)
   await setMarkersFromErrors(validationErrors.value)
 }
 
- 
 const debouncedValidate = () => {
   if (validationDebounceTimer.value) {
     clearTimeout(validationDebounceTimer.value)
@@ -194,43 +225,47 @@ const debouncedValidate = () => {
   }, 500)
 }
 
- 
 const onSchemaChange = (value: string) => {
   schemaContent.value = value
   debouncedValidate()
 }
 
- 
-const onModeSwitch = async (newMode: 'json' | 'cedar') => {
-  if (isEditing.value && schemaContent.value.trim()) {
- 
-    try {
-      if (viewMode.value === 'cedar' && newMode === 'json') {
- 
-        const jsonSchema = await convertCedarToJson(schemaContent.value)
-        schemaContent.value = JSON.stringify(jsonSchema, null, 2)
-      } else if (viewMode.value === 'json' && newMode === 'cedar') {
- 
-        const parsed = JSON.parse(schemaContent.value)
-        schemaContent.value = await convertJsonToCedar(parsed)
-      }
-      
-      viewMode.value = newMode
-      await validateSchema()
-    } catch (e: any) {
-      toast.error(getUserMessage(e))
-      return
+
+const onTabSwitch = async (newTab: 'simplified' | 'json' | 'cedar') => {
+  if (newTab === 'simplified') {
+    // When switching to simplified, build the model if needed
+    activeTab.value = newTab
+    if (!normalizedSchema.value) {
+      await buildSimplifiedModel(schemaFromStore.value)
     }
   } else {
- 
-    viewMode.value = newMode
-    await loadSchema()
+    // When switching between JSON/Cedar, handle conversion if editing
+    if (isEditing.value && schemaContent.value.trim() && activeTab.value !== 'simplified') {
+      try {
+        const currentMode = activeTab.value === 'json' ? 'json' : 'cedar'
+        if (currentMode === 'cedar' && newTab === 'json') {
+          const jsonSchema = await convertCedarToJson(schemaContent.value)
+          schemaContent.value = JSON.stringify(jsonSchema, null, 2)
+        } else if (currentMode === 'json' && newTab === 'cedar') {
+          const parsed = JSON.parse(schemaContent.value)
+          schemaContent.value = await convertJsonToCedar(parsed)
+        }
+        
+        activeTab.value = newTab
+        await validateSchema()
+      } catch (e: any) {
+        toast.error(getUserMessage(e))
+        return
+      }
+    } else {
+      activeTab.value = newTab
+      await loadSchema()
+    }
   }
 }
 
- 
-const handleSave = async () => {
 
+const handleSave = async () => {
   const check = await checkAction('update_schema', 'schema')
   if (!check.allowed) {
     toast.error('You do not have permission to update the schema')
@@ -246,11 +281,9 @@ const handleSave = async () => {
   try {
     let cedarTextToSave: string
     
-    if (viewMode.value === 'cedar') {
- 
+    if (activeTab.value === 'cedar') {
       cedarTextToSave = schemaContent.value
       
- 
       const validationResult = await validateCedarSchema(cedarTextToSave)
       if (!validationResult.valid) {
         validationErrors.value = validationResult.errors
@@ -258,13 +291,10 @@ const handleSave = async () => {
         return
       }
       
- 
       await updateSchema(cedarTextToSave, 'cedar')
-    } else {
- 
+    } else if (activeTab.value === 'json') {
       const parsed = JSON.parse(schemaContent.value)
       
- 
       const validationResult = await validateJsonSchema(parsed)
       if (!validationResult.valid) {
         validationErrors.value = validationResult.errors
@@ -272,13 +302,10 @@ const handleSave = async () => {
         return
       }
       
- 
       cedarTextToSave = await convertJsonToCedar(parsed)
       await updateSchema(cedarTextToSave, 'cedar')
     }
     
- 
- 
     await loadSchema()
     
     isEditing.value = false
@@ -290,16 +317,13 @@ const handleSave = async () => {
   }
 }
 
- 
 const handleCancel = async () => {
   isEditing.value = false
   validationErrors.value = []
   await loadSchema()
 }
 
- 
 const startEditing = async () => {
-
   const check = await checkAction('update_schema', 'schema')
   if (!check.allowed) {
     toast.error('You do not have permission to edit the schema')
@@ -310,17 +334,14 @@ const startEditing = async () => {
   validationErrors.value = []
 }
 
+
 const displayLastSynced = computed(() => lastSyncedAt.value || new Date())
-
-// Disable language switch when there are validation errors
 const hasEditorErrors = computed(() => validationErrors.value.length > 0)
-
-// Compute the Monaco language id based on viewMode
 const editorLang = computed(() => {
-  return viewMode.value === 'cedar' ? 'cedar-schema' : 'custom-json'
+  return activeTab.value === 'cedar' ? 'cedar-schema' : 'custom-json'
 })
 
-// Keep a reference to the active editor instance so validation can set markers
+
 const editorInstance = ref<Monaco.editor.IStandaloneCodeEditor | null>(null)
 
 const schemaEditor = ref({
@@ -336,9 +357,6 @@ const cursorPositionDisplay = computed(() => {
   return `${schemaEditor.value.cursorPos.line}:${schemaEditor.value.cursorPos.column}`
 })
 
-/**
- * Convert ValidationError[] into Monaco IMarkerData[] and push them onto the editor model.
- */
 const setMarkersFromErrors = async (errors: ValidationError[]) => {
     const editor = editorInstance.value
     if (!editor) return
@@ -347,13 +365,12 @@ const setMarkersFromErrors = async (errors: ValidationError[]) => {
     if (!model || model.isDisposed()) return
 
     const markers: Monaco.editor.IMarkerData[] = errors.map((err) => {
-        // Try to map sourceLocations (character offsets) to line/column
         if (err.sourceLocations && err.sourceLocations.length > 0) {
             const loc = err.sourceLocations[0]
             const startPos = model.getPositionAt(loc.start)
             const endPos = model.getPositionAt(loc.end)
             return {
-                severity: 8, // MarkerSeverity.Error
+                severity: 8,
                 message: err.message + (err.help ? `\n${err.help}` : ''),
                 startLineNumber: startPos.lineNumber,
                 startColumn: startPos.column,
@@ -362,9 +379,8 @@ const setMarkersFromErrors = async (errors: ValidationError[]) => {
             }
         }
 
-        // No source location — mark the first line as a fallback
         return {
-            severity: 8, // MarkerSeverity.Error
+            severity: 8,
             message: err.message + (err.help ? `\n${err.help}` : ''),
             startLineNumber: 1,
             startColumn: 1,
@@ -377,13 +393,8 @@ const setMarkersFromErrors = async (errors: ValidationError[]) => {
 }
 
 const onEditorMounted = (editor: Monaco.editor.IStandaloneCodeEditor) => {
-    // Store the editor reference for marker updates
     editorInstance.value = editor
-
-    // Apply the correct theme on editor mount
     monacoEditor.setTheme();
-
-    // Listen to cursor position change
     editor.onDidChangeCursorPosition(({ position }) => {
         schemaEditor.value.cursorPos = { line: position.lineNumber, column: position.column };
     });
@@ -392,12 +403,8 @@ const onEditorMounted = (editor: Monaco.editor.IStandaloneCodeEditor) => {
 const onSchemaContentChanged = async (editor: Monaco.editor.IStandaloneCodeEditor) => {
     const model = editor.getModel();
     if (model) {
-        // Check if model is still valid before validation
         if (!model.isDisposed()) {
-            // Validate immediately on mount
             await validateSchema();
-            
-            // Set up content change listener for continuous validation
             editor.onDidChangeModelContent(() => {
                 debouncedValidate();
             });
@@ -409,12 +416,9 @@ const monitorSchemaMarkerChanges = async (editor: Monaco.editor.IStandaloneCodeE
     const monaco = await useMonaco();
     const model = editor.getModel();
     if (monaco && model) {
-        monaco.editor.onDidChangeMarkers((uris: Monaco.Uri[]) => {
-            // Check if the markers are for the current model
+        monaco.editor.onDidChangeMarkers((uris: readonly Monaco.Uri[]) => {
             if (uris.some((uri: Monaco.Uri) => uri.toString() === model.uri.toString())) {
-                // Get updated markers for this model
                 const markers = monaco.editor.getModelMarkers({ resource: model.uri });
-                
                 schemaEditor.value.hasError = markers.length > 0;
             }
         });
@@ -424,13 +428,21 @@ const monitorSchemaMarkerChanges = async (editor: Monaco.editor.IStandaloneCodeE
 const formatValidationMessage = (message: string) => {
   return getUserMessage({ message })
 }
+
+
+watch(activeTab, async (tab) => {
+  if (tab === 'simplified' && !normalizedSchema.value) {
+    await buildSimplifiedModel(schemaFromStore.value)
+  } else if (tab !== 'simplified' && !schemaContent.value) {
+    await loadSchema()
+  }
+})
 </script>
 
 <template>
   <div class="h-full flex flex-col">
     <!-- Permissions Loading Skeleton -->
     <div v-if="permissionsLoading" class="h-full flex flex-col">
-      <!-- Toolbar Skeleton -->
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
           <div class="skeleton-shimmer h-6 w-12 rounded-full"></div>
@@ -444,143 +456,201 @@ const formatValidationMessage = (message: string) => {
           <div class="skeleton-shimmer h-9 w-10 rounded-lg"></div>
         </div>
       </div>
-      
-      <!-- Editor Skeleton -->
       <div class="flex-1 card">
         <div class="skeleton-shimmer h-full w-full rounded-lg" style="min-height: 400px;"></div>
       </div>
     </div>
 
-    <!-- Main Content (only show after permissions load) -->
+    <!-- Main Content -->
     <template v-else>
       <!-- Toolbar -->
       <div class="flex items-center justify-between mb-4">
-      <div class="flex items-center gap-3">
-        <span class="badge badge-neutral">v1.0</span>
-        <span class="text-xs text-[rgb(var(--text-muted))]">
-          Synced: {{ formatDate(displayLastSynced) }}
-        </span>
-        <span v-if="schemaEditor.hasError || validationErrors.length > 0" class="badge badge-danger">
-          {{ validationErrors.length }} error(s)
-        </span>
-        <span v-else-if="isEditing && schemaContent.trim()" class="badge badge-success">
-          Valid
-        </span>
-      </div>
-      <div class="flex items-center gap-2">
-        <div class="flex items-center gap-1 rounded-lg border-2 border-[rgb(var(--border))] p-1">
-          <button
-            @click="onModeSwitch('json')"
-            :disabled="hasEditorErrors"
-            :class="[
-              'px-3 py-1 rounded text-xs font-medium transition-all',
-              viewMode === 'json'
-                ? 'bg-indigo-500 text-white'
-                : 'text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))]',
-              hasEditorErrors && viewMode !== 'json' ? 'opacity-40 cursor-not-allowed' : ''
-            ]"
-          >
-            JSON
-          </button>
-          <button
-            @click="onModeSwitch('cedar')"
-            :disabled="hasEditorErrors"
-            :class="[
-              'px-3 py-1 rounded text-xs font-medium transition-all',
-              viewMode === 'cedar'
-                ? 'bg-indigo-500 text-white'
-                : 'text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))]',
-              hasEditorErrors && viewMode !== 'cedar' ? 'opacity-40 cursor-not-allowed' : ''
-            ]"
-          >
-            Cedar
-          </button>
-        </div>
-        
-        <template v-if="!isEditing">
-          <UiButton size="sm" variant="outline" :loading="loading" @click="loadSchema">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Refresh
-          </UiButton>
-          <!-- <UiButton v-if="canUpdateSchema" size="sm" @click="startEditing">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            Edit
-          </UiButton> -->
-        </template>
-        
-        <template v-else>
-          <UiButton size="sm" variant="outline" @click="handleCancel" :disabled="isSaving">
-            Cancel
-          </UiButton>
-          <UiButton 
-            size="sm" 
-            @click="handleSave"
-            :disabled="!canUpdateSchema || validationErrors.length > 0" 
-            :loading="isSaving"
-          >
-            Save
-          </UiButton>
-        </template>
-        
-        <UiCopyButton :text="schemaContent" />
-      </div>
-    </div>
-    
-    <!-- Validation Errors -->
-    <div v-if="validationErrors.length > 0 && isEditing" class="mb-4 space-y-2">
-      <div 
-        v-for="(error, idx) in validationErrors" 
-        :key="idx"
-        class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800"
-      >
-        <div class="flex items-start gap-2">
-          <svg class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div class="flex-1">
-            <p class="text-sm font-medium text-red-700 dark:text-red-300">
-              {{ formatValidationMessage(error.message) }}
-            </p>
-            <p v-if="error.help" class="text-xs text-red-600 dark:text-red-400 mt-1">
-              {{ error.help }}
-            </p>
-            <p v-if="error.sourceLocations && error.sourceLocations.length > 0" class="text-xs text-red-600 dark:text-red-400 mt-1">
-              Position: {{ error.sourceLocations[0].start }}-{{ error.sourceLocations[0].end }}
-            </p>
+        <div class="flex items-center gap-3">
+          <!-- Simplified | JSON | Cedar tab switcher -->
+          <div class="flex items-center gap-1 rounded-lg border-2 border-[rgb(var(--border))] p-1">
+            <button
+              @click="onTabSwitch('simplified')"
+              :class="[
+                'px-3 py-1 rounded text-xs font-medium transition-all',
+                activeTab === 'simplified'
+                  ? 'bg-indigo-500 text-white'
+                  : 'text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))]'
+              ]"
+            >
+              Simplified
+            </button>
+            <button
+              @click="onTabSwitch('json')"
+              :class="[
+                'px-3 py-1 rounded text-xs font-medium transition-all',
+                activeTab === 'json'
+                  ? 'bg-indigo-500 text-white'
+                  : 'text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))]'
+              ]"
+            >
+              JSON
+            </button>
+            <button
+              @click="onTabSwitch('cedar')"
+              :class="[
+                'px-3 py-1 rounded text-xs font-medium transition-all',
+                activeTab === 'cedar'
+                  ? 'bg-indigo-500 text-white'
+                  : 'text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text))]'
+              ]"
+            >
+              Cedar
+            </button>
           </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Schema Editor -->
-      <div v-if="loading && !isEditing" class="flex-1 min-h-0 card overflow-hidden p-6">
-        <UiLoadingSkeleton :lines="15" height="h-5" />
-      </div>
-      <div v-else class="flex-1 min-h-0 flex flex-col card overflow-hidden p-0">
-        <MonacoEditor
-          :key="viewMode"
-          v-model="schemaContent"
-          :lang="editorLang"
-          :options="{ ...monacoEditor.options, readOnly: !isEditing }"
-          class="flex-1 min-h-0"
-          @load="(editor) => { onEditorMounted(editor); onSchemaContentChanged(editor); monitorSchemaMarkerChanges(editor); }"
-        />
-        <div class="shrink-0 flex items-center justify-between text-xs px-2 py-1 bg-neutral-200 dark:bg-slate-900 text-neutral-500 dark:text-neutral-400">
-          <span class="font-medium uppercase tracking-wide">{{ viewMode === 'cedar' ? 'Cedar' : 'JSON' }}</span>
-          <span class="flex items-center gap-3">
-            <span class="inline-flex items-center gap-1" :class="isEditing ? 'text-amber-600 dark:text-amber-400' : ''">
-              <span class="inline-block w-1.5 h-1.5 rounded-full" :class="isEditing ? 'bg-amber-500' : 'bg-neutral-400 dark:bg-neutral-500'"></span>
-              {{ isEditing ? 'EDIT' : 'READ' }}
-            </span>
-            |
-            <span>Ln {{ schemaEditor.cursorPos.line }}, Col {{ schemaEditor.cursorPos.column }}</span>
+
+          <span class="badge badge-neutral">v1.0</span>
+          <span class="text-xs text-[rgb(var(--text-muted))]">
+            Synced: {{ formatDate(displayLastSynced) }}
+          </span>
+          <span v-if="(activeTab === 'json' || activeTab === 'cedar') && (schemaEditor.hasError || validationErrors.length > 0)" class="badge badge-danger">
+            {{ validationErrors.length }} error(s)
+          </span>
+          <span v-else-if="(activeTab === 'json' || activeTab === 'cedar') && isEditing && schemaContent.trim()" class="badge badge-success">
+            Valid
           </span>
         </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Editor controls for JSON/Cedar tabs -->
+          <template v-if="activeTab === 'json' || activeTab === 'cedar'">
+            <template v-if="!isEditing">
+              <UiButton size="sm" variant="outline" :loading="loading" @click="loadSchema">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </UiButton>
+            </template>
+            
+            <template v-else>
+              <UiButton size="sm" variant="outline" @click="handleCancel" :disabled="isSaving">
+                Cancel
+              </UiButton>
+              <UiButton 
+                size="sm" 
+                @click="handleSave"
+                :disabled="!canUpdateSchema || validationErrors.length > 0" 
+                :loading="isSaving"
+              >
+                Save
+              </UiButton>
+            </template>
+            
+            <UiCopyButton :text="schemaContent" />
+          </template>
+
+          <!-- Simplified tab: only refresh -->
+          <template v-if="activeTab === 'simplified'">
+            <UiButton size="sm" variant="outline" :loading="loading" @click="loadSchema">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </UiButton>
+          </template>
+        </div>
       </div>
+      
+      <!-- ── SIMPLIFIED TAB ──────────────────────────────────────────────── -->
+      <template v-if="activeTab === 'simplified'">
+        <!-- Loading -->
+        <div v-if="loading" class="flex-1 min-h-0 card overflow-hidden p-6">
+          <UiLoadingSkeleton :lines="15" height="h-5" />
+        </div>
+
+        <!-- Error state -->
+        <div v-else-if="simplifiedError" class="flex-1 min-h-0 card overflow-hidden p-6">
+          <div class="flex flex-col items-center justify-center h-full gap-3">
+            <svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-sm text-[rgb(var(--text-muted))] text-center max-w-md">
+              Couldn't build simplified view from schema.
+            </p>
+            <p class="text-xs text-red-500 dark:text-red-400 text-center max-w-md font-mono">
+              {{ simplifiedError }}
+            </p>
+            <button
+              class="mt-2 px-4 py-1.5 text-xs font-medium rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+              @click="onTabSwitch('cedar')"
+            >
+              Open Cedar Tab
+            </button>
+          </div>
+        </div>
+
+        <!-- Simplified view -->
+        <div v-else-if="normalizedSchema" class="flex-1 min-h-0">
+          <SchemaSimplifiedView :schema="normalizedSchema" />
+        </div>
+
+        <!-- Empty schema -->
+        <div v-else class="flex-1 min-h-0 card overflow-hidden p-6">
+          <div class="flex flex-col items-center justify-center h-full gap-2">
+            <p class="text-sm text-[rgb(var(--text-muted))]">Schema loaded but no entities or actions found.</p>
+          </div>
+        </div>
+      </template>
+
+      <!-- ── JSON/CEDAR TABS (Monaco editor) ──────────────────────────────── -->
+      <template v-if="activeTab === 'json' || activeTab === 'cedar'">
+        <!-- Validation Errors -->
+        <div v-if="validationErrors.length > 0 && isEditing" class="mb-4 space-y-2">
+          <div 
+            v-for="(error, idx) in validationErrors" 
+            :key="idx"
+            class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800"
+          >
+            <div class="flex items-start gap-2">
+              <svg class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div class="flex-1">
+                <p class="text-sm font-medium text-red-700 dark:text-red-300">
+                  {{ formatValidationMessage(error.message) }}
+                </p>
+                <p v-if="error.help" class="text-xs text-red-600 dark:text-red-400 mt-1">
+                  {{ error.help }}
+                </p>
+                <p v-if="error.sourceLocations && error.sourceLocations.length > 0" class="text-xs text-red-600 dark:text-red-400 mt-1">
+                  Position: {{ error.sourceLocations[0].start }}-{{ error.sourceLocations[0].end }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Schema Editor -->
+        <div v-if="loading && !isEditing" class="flex-1 min-h-0 card overflow-hidden p-6">
+          <UiLoadingSkeleton :lines="15" height="h-5" />
+        </div>
+        <div v-else class="flex-1 min-h-0 flex flex-col card overflow-hidden p-0">
+          <MonacoEditor
+            :key="activeTab"
+            v-model="schemaContent"
+            :lang="editorLang"
+            :options="{ ...monacoEditor.options, readOnly: !isEditing }"
+            class="flex-1 min-h-0"
+            @load="(editor) => { onEditorMounted(editor); onSchemaContentChanged(editor); monitorSchemaMarkerChanges(editor); }"
+          />
+          <div class="shrink-0 flex items-center justify-between text-xs px-2 py-1 bg-neutral-200 dark:bg-slate-900 text-neutral-500 dark:text-neutral-400">
+            <span class="font-medium uppercase tracking-wide">{{ activeTab === 'cedar' ? 'Cedar' : 'JSON' }}</span>
+            <span class="flex items-center gap-3">
+              <span class="inline-flex items-center gap-1" :class="isEditing ? 'text-amber-600 dark:text-amber-400' : ''">
+                <span class="inline-block w-1.5 h-1.5 rounded-full" :class="isEditing ? 'bg-amber-500' : 'bg-neutral-400 dark:bg-neutral-500'"></span>
+                {{ isEditing ? 'EDIT' : 'READ' }}
+              </span>
+              |
+              <span>Ln {{ schemaEditor.cursorPos.line }}, Col {{ schemaEditor.cursorPos.column }}</span>
+            </span>
+          </div>
+        </div>
+      </template>
     </template>
   </div>
 </template>

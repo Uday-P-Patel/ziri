@@ -93,11 +93,9 @@ export async function createUser(input: CreateUserInput): Promise<{ user: User; 
   }
   
   const shouldCreateApiKey = input.createApiKey === true
-  console.log(`[USER SERVICE] createUser - createApiKey value:`, input.createApiKey, `type:`, typeof input.createApiKey, `shouldCreateApiKey:`, shouldCreateApiKey)
-  
+
   let createdApiKey: string | undefined
   if (shouldCreateApiKey) {
-    console.log(`[USER SERVICE] Creating UserKey entity and API key for user ${userId}`)
     
     const userKeyId = generateUserKeyId()
     const userKeyEntity = {
@@ -129,7 +127,7 @@ export async function createUser(input: CreateUserInput): Promise<{ user: User; 
       db.prepare('DELETE FROM auth WHERE id = ?').run(userId)
       throw new Error(`Failed to create UserKey entity: ${error.message}`)
     }
-    
+
     try {
       const { generateApiKey, hashApiKey } = await import('../utils/api-key.js')
       const apiKey = generateApiKey(userId)
@@ -141,12 +139,9 @@ export async function createUser(input: CreateUserInput): Promise<{ user: User; 
         INSERT INTO user_agent_keys (id, key_value, key_hash, auth_id, status)
         VALUES (?, ?, ?, ?, 'active')
       `).run(keyId, keySuffix, keyHash, userId)
-      console.log(`[USER SERVICE] ✓ API key created automatically for user ${userId}`)
     } catch (error: any) {
       console.warn(`[USER SERVICE] ✗ Failed to create API key for user ${userId}:`, error.message)
     }
-  } else {
-    console.log(`[USER SERVICE] Skipping UserKey entity and API key creation for user ${userId} (shouldCreateApiKey: false)`)
   }
 
   const { sendEmail, generateUserCredentialsEmail } = await import('./email-service.js')
@@ -171,9 +166,6 @@ export async function createUser(input: CreateUserInput): Promise<{ user: User; 
       text: emailContent.text
     })
     
-    if (emailSent) {
-      console.log(`[USER SERVICE] Credentials email sent to ${user.email}`)
-    }
   } catch (error: any) {
     console.warn(`[USER SERVICE] Failed to send email to ${user.email}:`, error.message)
   }
@@ -536,9 +528,6 @@ export async function resetUserPassword(userId: string): Promise<{ password: str
       text: emailContent.text
     })
     
-    if (emailSent) {
-      console.log(`[USER SERVICE] Password reset email sent to ${user.email}`)
-    }
   } catch (error: any) {
     console.warn(`[USER SERVICE] Failed to send password reset email to ${user.email}:`, error.message)
   }

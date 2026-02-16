@@ -3,14 +3,10 @@ export function validateEmail(email: string): boolean {
     return emailRegex.test(email)
 }
 
-/**
- * Validates email or Mailgun-style From address.
- * Accepts: "abc@mail.com" or "Display Name <abc@mail.com>"
- */
 export function validateEmailOrFromAddress(value: string): boolean {
     const trimmed = value.trim()
     if (!trimmed) return false
-    // Format: "Display Name" <email@domain.com>
+
     const angleMatch = trimmed.match(/<([^>]+)>$/)
     if (angleMatch) {
         return validateEmail(angleMatch[1].trim())

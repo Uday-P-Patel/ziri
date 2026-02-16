@@ -6,7 +6,6 @@ import { logInternalAction } from '../utils/internal-audit-helpers.js'
 const router: Router = Router()
 
 router.get('/', requireAdmin, async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const uid = req.query.uid as string | undefined
     const includeApiKeys = req.query.includeApiKeys === 'true'

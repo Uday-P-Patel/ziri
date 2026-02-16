@@ -4,10 +4,12 @@ import { useToast } from '~/composables/useToast'
 import { useDebounce } from '~/composables/useDebounce'
 import { formatDate } from '~/utils/formatters'
 import { useInternalAuth } from '~/composables/useInternalAuth'
+import { useApiError } from '~/composables/useApiError'
 
 const { users, loading, loadUsers, createUser, updateUser, deleteUser, resetPassword } = useUsers()
 const toast = useToast()
 const { checkActions, checkAction } = useInternalAuth()
+const { getUserMessage } = useApiError()
 
 
 const permissionsLoading = ref(true)
@@ -150,7 +152,7 @@ const handleCreateUser = async () => {
       createApiKey: true
     })
   } catch (error: any) {
-    toast.error(`Failed to create user: ${error.message}`)
+    toast.error(`Failed to create user: ${getUserMessage(error)}`)
   } finally {
     isCreatingUser.value = false
   }
@@ -196,7 +198,7 @@ const handleDeleteUser = async () => {
     userToDelete.value = null
     toast.success('User deleted successfully')
   } catch (error: any) {
-    toast.error(`Failed to delete user: ${error.message}`)
+    toast.error(`Failed to delete user: ${getUserMessage(error)}`)
   } finally {
     isDeletingUser.value = false
   }
@@ -226,7 +228,7 @@ const handleResetPassword = async () => {
     
     userToResetPassword.value = null
   } catch (error: any) {
-    toast.error(`Failed to reset password: ${error.message}`)
+    toast.error(`Failed to reset password: ${getUserMessage(error)}`)
   } finally {
     isResettingPassword.value = false
   }

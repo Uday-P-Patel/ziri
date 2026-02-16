@@ -147,7 +147,7 @@ export const ANTHROPIC_PRICING: ModelPricing[] = [
   { provider: 'anthropic', model: 'claude-instant-1.2', input_cost_per_token: 0.0000008, output_cost_per_token: 0.0000024, max_input_tokens: 100000, max_output_tokens: 8191, supports_streaming: true, supported_actions: 'completion' },
 ]
 
-// Google (Gemini) pricing from google_model_pricing.txt - gemini provider
+
 export const GOOGLE_PRICING: ModelPricing[] = [
   { provider: 'google', model: 'gemini-2.5-pro', input_cost_per_token: 0.00000125, output_cost_per_token: 0.00001, max_input_tokens: 1048576, max_output_tokens: 65535, supports_vision: true, supports_function_calling: true, supports_streaming: true, supported_actions: 'completion' },
   { provider: 'google', model: 'gemini-2.5-pro-exp-03-25', input_cost_per_token: 0, output_cost_per_token: 0, max_input_tokens: 1048576, max_output_tokens: 65535, supports_vision: true, supports_function_calling: true, supports_streaming: true, supported_actions: 'completion' },
@@ -299,7 +299,7 @@ export const MISTRAL_PRICING: ModelPricing[] = [
   { provider: 'mistral', model: 'open-codestral-mamba', input_cost_per_token: 0.00000025, output_cost_per_token: 0.00000025, max_input_tokens: 256000, max_output_tokens: 256000, supports_function_calling: true, supports_streaming: true, supported_actions: 'completion' },
 ]
 
-// Moonshot (Kimi) pricing - provider is moonshot per official pricing
+
 export const MOONSHOT_PRICING: ModelPricing[] = [
   { provider: 'moonshot', model: 'kimi-k2.5', input_cost_per_token: 0.0000006, output_cost_per_token: 0.000003, max_input_tokens: 262144, max_output_tokens: 262144, supports_vision: true, supports_function_calling: true, supports_streaming: true, supported_actions: 'completion' },
   { provider: 'moonshot', model: 'kimi-k2-thinking', input_cost_per_token: 0.0000006, output_cost_per_token: 0.0000025, max_input_tokens: 262144, max_output_tokens: 262144, supports_function_calling: true, supports_streaming: true, supported_actions: 'completion' },
@@ -335,9 +335,9 @@ export const DEEPSEEK_PRICING: ModelPricing[] = [
   { provider: 'deepseek', model: 'deepseek-v3.2-exp', input_cost_per_token: 0.0000002, output_cost_per_token: 0.0000004, max_input_tokens: 163840, max_output_tokens: 163840, supports_function_calling: true, supports_streaming: true, supported_actions: 'completion' },
 ]
 
-// Vertex AI pricing - from google_model_pricing.txt, all models where provider starts with vertex
+
 export const VERTEX_AI_PRICING: ModelPricing[] = [
-  // vertex_ai-chat-models, vertex_ai-code-*, vertex_ai-language-models, vertex_ai-vision-models
+
   { provider: 'vertex_ai', model: 'chat-bison', input_cost_per_token: 0.000000125, output_cost_per_token: 0.000000125, max_input_tokens: 8192, max_output_tokens: 4096, supported_actions: 'completion' },
   { provider: 'vertex_ai', model: 'chat-bison-32k', input_cost_per_token: 0.000000125, output_cost_per_token: 0.000000125, max_input_tokens: 32000, max_output_tokens: 8192, supported_actions: 'completion' },
   { provider: 'vertex_ai', model: 'chat-bison-32k@002', input_cost_per_token: 0.000000125, output_cost_per_token: 0.000000125, max_input_tokens: 32000, max_output_tokens: 8192, supported_actions: 'completion' },
@@ -413,9 +413,9 @@ export const VERTEX_AI_PRICING: ModelPricing[] = [
   { provider: 'vertex_ai', model: 'gemini-pro-experimental', input_cost_per_token: 0, output_cost_per_token: 0, max_input_tokens: 1000000, max_output_tokens: 8192, supported_actions: 'completion' },
   { provider: 'vertex_ai', model: 'gemini-pro-vision', input_cost_per_token: 0.0000005, output_cost_per_token: 0.0000015, max_input_tokens: 16384, max_output_tokens: 2048, supports_vision: true, supported_actions: 'completion' },
   { provider: 'vertex_ai', model: 'gemini-robotics-er-1.5-preview', input_cost_per_token: 0.0000003, output_cost_per_token: 0.0000025, max_input_tokens: 1048576, max_output_tokens: 65535, supported_actions: 'completion' },
-  // gemini/gemini-2.5-flash-image (vertex_ai-language-models)
+
   { provider: 'vertex_ai', model: 'gemini/gemini-2.5-flash-image', input_cost_per_token: 0.0000003, output_cost_per_token: 0.0000025, max_input_tokens: 32768, max_output_tokens: 32768, supports_vision: true, supported_actions: 'completion' },
-  // vertex_ai-text-models, vertex_ai-embedding-models
+
   { provider: 'vertex_ai', model: 'medlm-large', input_cost_per_token: 0, output_cost_per_token: 0, max_input_tokens: 8192, max_output_tokens: 1024, supported_actions: 'completion' },
   { provider: 'vertex_ai', model: 'medlm-medium', input_cost_per_token: 0, output_cost_per_token: 0, max_input_tokens: 32768, max_output_tokens: 8192, supported_actions: 'completion' },
   { provider: 'vertex_ai', model: 'multimodalembedding', input_cost_per_token: 0.0000008, output_cost_per_token: 0, max_input_tokens: 2048, supported_actions: 'embedding' },
@@ -438,7 +438,7 @@ export const VERTEX_AI_PRICING: ModelPricing[] = [
   { provider: 'vertex_ai', model: 'textembedding-gecko-multilingual@001', input_cost_per_token: 0.0000001, output_cost_per_token: 0, max_input_tokens: 3072, supported_actions: 'embedding' },
   { provider: 'vertex_ai', model: 'textembedding-gecko@001', input_cost_per_token: 0.0000001, output_cost_per_token: 0, max_input_tokens: 3072, supported_actions: 'embedding' },
   { provider: 'vertex_ai', model: 'textembedding-gecko@003', input_cost_per_token: 0.0000001, output_cost_per_token: 0, max_input_tokens: 3072, supported_actions: 'embedding' },
-  // vertex_ai prefixed models
+
   { provider: 'vertex_ai', model: 'vertex_ai/chirp', input_cost_per_token: 0, output_cost_per_token: 0, supported_actions: 'completion' },
   { provider: 'vertex_ai', model: 'vertex_ai/deep-research-pro-preview-12-2025', input_cost_per_token: 0.000002, output_cost_per_token: 0.000012, max_input_tokens: 65536, max_output_tokens: 32768, supported_actions: 'completion' },
   { provider: 'vertex_ai', model: 'vertex_ai/deepseek-ai/deepseek-ocr-maas', input_cost_per_token: 0.0000003, output_cost_per_token: 0.0000012, supported_actions: 'completion' },
@@ -467,7 +467,7 @@ export const VERTEX_AI_PRICING: ModelPricing[] = [
   { provider: 'vertex_ai', model: 'vertex_ai/veo-3.1-generate-preview', input_cost_per_token: 0, output_cost_per_token: 0, max_input_tokens: 1024, supported_actions: 'completion' },
 ]
 
-// DashScope (Qwen) pricing - provider is dashscope per official pricing
+
 export const DASHSCOPE_PRICING: ModelPricing[] = [
   { provider: 'dashscope', model: 'qwen-plus', input_cost_per_token: 0.0000004, output_cost_per_token: 0.0000012, max_input_tokens: 129024, max_output_tokens: 16384, supports_function_calling: true, supports_streaming: true, supported_actions: 'completion' },
   { provider: 'dashscope', model: 'qwen-plus-latest', input_cost_per_token: 0, output_cost_per_token: 0, max_input_tokens: 997952, max_output_tokens: 32768, supports_function_calling: true, supports_streaming: true, supported_actions: 'completion' },
@@ -493,9 +493,9 @@ export const DASHSCOPE_PRICING: ModelPricing[] = [
   { provider: 'dashscope', model: 'qwen3-max-preview', input_cost_per_token: 0, output_cost_per_token: 0, max_input_tokens: 258048, max_output_tokens: 65536, supports_function_calling: true, supports_streaming: true, supported_actions: 'completion' },
 ]
 
-// OpenRouter pricing - provider/model format, $/1M -> per-token
+
 export const OPENROUTER_PRICING: ModelPricing[] = [
-  // Anthropic
+
   { provider: 'openrouter', model: 'anthropic/claude-2', input_cost_per_token: 0.00001102, output_cost_per_token: 0.00003268, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'anthropic/claude-3-5-haiku', input_cost_per_token: 0.000001, output_cost_per_token: 0.000005, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'anthropic/claude-3-5-haiku-20241022', input_cost_per_token: 0.000001, output_cost_per_token: 0.000005, max_input_tokens: 200000, max_output_tokens: 8192, supports_function_calling: true, supported_actions: 'completion' },
@@ -514,15 +514,15 @@ export const OPENROUTER_PRICING: ModelPricing[] = [
   { provider: 'openrouter', model: 'anthropic/claude-opus-4.5', input_cost_per_token: 0.000005, output_cost_per_token: 0.000025, max_input_tokens: 200000, max_output_tokens: 32000, supports_vision: true, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'anthropic/claude-sonnet-4', input_cost_per_token: 0.000003, output_cost_per_token: 0.000015, max_input_tokens: 1000000, max_output_tokens: 64000, supports_vision: true, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'anthropic/claude-sonnet-4.5', input_cost_per_token: 0.000003, output_cost_per_token: 0.000015, max_input_tokens: 1000000, max_output_tokens: 1000000, supports_vision: true, supports_function_calling: true, supported_actions: 'completion' },
-  // Bytedance
+
   { provider: 'openrouter', model: 'bytedance/ui-tars-1.5-7b', input_cost_per_token: 0.0000001, output_cost_per_token: 0.0000002, max_input_tokens: 131072, max_output_tokens: 2048, supports_function_calling: true, supported_actions: 'completion' },
-  // Cognitivecomputations
+
   { provider: 'openrouter', model: 'cognitivecomputations/dolphin-mixtral-8x7b', input_cost_per_token: 0.0000005, output_cost_per_token: 0.0000005, supports_function_calling: true, supported_actions: 'completion' },
-  // Cohere
+
   { provider: 'openrouter', model: 'cohere/command-r-plus', input_cost_per_token: 0.000003, output_cost_per_token: 0.000015, supports_function_calling: true, supported_actions: 'completion' },
-  // Databricks
+
   { provider: 'openrouter', model: 'databricks/dbrx-instruct', input_cost_per_token: 0.0000006, output_cost_per_token: 0.0000006, supports_function_calling: true, supported_actions: 'completion' },
-  // Deepseek
+
   { provider: 'openrouter', model: 'deepseek/deepseek-chat', input_cost_per_token: 0.00000014, output_cost_per_token: 0.00000028, max_input_tokens: 65536, max_output_tokens: 8192, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'deepseek/deepseek-chat-v3-0324', input_cost_per_token: 0.00000014, output_cost_per_token: 0.00000028, max_input_tokens: 65536, max_output_tokens: 8192, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'deepseek/deepseek-chat-v3.1', input_cost_per_token: 0.0000002, output_cost_per_token: 0.0000008, max_input_tokens: 163840, max_output_tokens: 163840, supports_function_calling: true, supported_actions: 'completion' },
@@ -531,9 +531,9 @@ export const OPENROUTER_PRICING: ModelPricing[] = [
   { provider: 'openrouter', model: 'deepseek/deepseek-r1-0528', input_cost_per_token: 0.0000005, output_cost_per_token: 0.00000215, max_input_tokens: 65336, max_output_tokens: 8192, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'deepseek/deepseek-v3.2', input_cost_per_token: 0.00000028, output_cost_per_token: 0.0000004, max_input_tokens: 163840, max_output_tokens: 163840, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'deepseek/deepseek-v3.2-exp', input_cost_per_token: 0.0000002, output_cost_per_token: 0.0000004, max_input_tokens: 163840, max_output_tokens: 163840, supports_function_calling: true, supported_actions: 'completion' },
-  // Fireworks
+
   { provider: 'openrouter', model: 'fireworks/firellava-13b', input_cost_per_token: 0.0000002, output_cost_per_token: 0.0000002, supports_function_calling: true, supported_actions: 'completion' },
-  // Google
+
   { provider: 'openrouter', model: 'google/gemini-2.0-flash-001', input_cost_per_token: 0.0000001, output_cost_per_token: 0.0000004, max_input_tokens: 1048576, max_output_tokens: 8192, supports_vision: true, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'google/gemini-2.5-flash', input_cost_per_token: 0.0000003, output_cost_per_token: 0.0000025, max_input_tokens: 1048576, max_output_tokens: 8192, supports_vision: true, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'google/gemini-2.5-pro', input_cost_per_token: 0.00000125, output_cost_per_token: 0.00001, max_input_tokens: 1048576, max_output_tokens: 8192, supports_vision: true, supports_function_calling: true, supported_actions: 'completion' },
@@ -543,13 +543,13 @@ export const OPENROUTER_PRICING: ModelPricing[] = [
   { provider: 'openrouter', model: 'google/gemini-pro-vision', input_cost_per_token: 0.000000125, output_cost_per_token: 0.000000375, supports_vision: true, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'google/palm-2-chat-bison', input_cost_per_token: 0.0000005, output_cost_per_token: 0.0000005, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'google/palm-2-codechat-bison', input_cost_per_token: 0.0000005, output_cost_per_token: 0.0000005, supports_function_calling: true, supported_actions: 'completion' },
-  // Gryphe
+
   { provider: 'openrouter', model: 'gryphe/mythomax-l2-13b', input_cost_per_token: 0.000001875, output_cost_per_token: 0.000001875, supports_function_calling: true, supported_actions: 'completion' },
-  // Jondurbin
+
   { provider: 'openrouter', model: 'jondurbin/airoboros-l2-70b-2.1', input_cost_per_token: 0.000013875, output_cost_per_token: 0.000013875, supports_function_calling: true, supported_actions: 'completion' },
-  // Mancer
+
   { provider: 'openrouter', model: 'mancer/weaver', input_cost_per_token: 0.000005625, output_cost_per_token: 0.000005625, supports_function_calling: true, supported_actions: 'completion' },
-  // Meta-Llama
+
   { provider: 'openrouter', model: 'meta-llama/codellama-34b-instruct', input_cost_per_token: 0.0000005, output_cost_per_token: 0.0000005, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'meta-llama/llama-2-13b-chat', input_cost_per_token: 0.0000002, output_cost_per_token: 0.0000002, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'meta-llama/llama-2-70b-chat', input_cost_per_token: 0.0000015, output_cost_per_token: 0.0000015, supports_function_calling: true, supported_actions: 'completion' },
@@ -557,12 +557,12 @@ export const OPENROUTER_PRICING: ModelPricing[] = [
   { provider: 'openrouter', model: 'meta-llama/llama-3-70b-instruct:nitro', input_cost_per_token: 0.0000009, output_cost_per_token: 0.0000009, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'meta-llama/llama-3-8b-instruct:extended', input_cost_per_token: 0.000000225, output_cost_per_token: 0.00000225, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'meta-llama/llama-3-8b-instruct:free', input_cost_per_token: 0, output_cost_per_token: 0, supports_function_calling: true, supported_actions: 'completion' },
-  // Microsoft
+
   { provider: 'openrouter', model: 'microsoft/wizardlm-2-8x22b:nitro', input_cost_per_token: 0.000001, output_cost_per_token: 0.000001, supports_function_calling: true, supported_actions: 'completion' },
-  // Minimax
+
   { provider: 'openrouter', model: 'minimax/minimax-m2', input_cost_per_token: 0.000000255, output_cost_per_token: 0.00000102, max_input_tokens: 204800, max_output_tokens: 204800, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'minimax/minimax-m2.1', input_cost_per_token: 0.00000027, output_cost_per_token: 0.0000012, max_input_tokens: 204000, max_output_tokens: 64000, supports_vision: true, supports_function_calling: true, supported_actions: 'completion' },
-  // Mistralai
+
   { provider: 'openrouter', model: 'mistralai/devstral-2512', input_cost_per_token: 0.00000015, output_cost_per_token: 0.0000006, max_input_tokens: 262144, max_output_tokens: 65536, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'mistralai/devstral-2512:free', input_cost_per_token: 0, output_cost_per_token: 0, max_input_tokens: 262144, max_output_tokens: 262144, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'mistralai/ministral-14b-2512', input_cost_per_token: 0.0000002, output_cost_per_token: 0.0000002, max_input_tokens: 262144, max_output_tokens: 262144, supports_vision: true, supports_function_calling: true, supported_actions: 'completion' },
@@ -575,11 +575,11 @@ export const OPENROUTER_PRICING: ModelPricing[] = [
   { provider: 'openrouter', model: 'mistralai/mistral-small-3.1-24b-instruct', input_cost_per_token: 0.0000001, output_cost_per_token: 0.0000003, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'mistralai/mistral-small-3.2-24b-instruct', input_cost_per_token: 0.0000001, output_cost_per_token: 0.0000003, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'mistralai/mixtral-8x22b-instruct', input_cost_per_token: 0.00000065, output_cost_per_token: 0.00000065, supports_function_calling: true, supported_actions: 'completion' },
-  // Moonshotai
+
   { provider: 'openrouter', model: 'moonshotai/kimi-k2.5', input_cost_per_token: 0.0000006, output_cost_per_token: 0.000003, max_input_tokens: 262144, max_output_tokens: 262144, supports_vision: true, supports_function_calling: true, supported_actions: 'completion' },
-  // Nousresearch
+
   { provider: 'openrouter', model: 'nousresearch/nous-hermes-llama2-13b', input_cost_per_token: 0.0000002, output_cost_per_token: 0.0000002, supports_function_calling: true, supported_actions: 'completion' },
-  // Openai
+
   { provider: 'openrouter', model: 'openai/gpt-3.5-turbo', input_cost_per_token: 0.0000015, output_cost_per_token: 0.000002, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'openai/gpt-3.5-turbo-16k', input_cost_per_token: 0.000003, output_cost_per_token: 0.000004, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'openai/gpt-4', input_cost_per_token: 0.00003, output_cost_per_token: 0.00006, supports_function_calling: true, supported_actions: 'completion' },
@@ -610,24 +610,24 @@ export const OPENROUTER_PRICING: ModelPricing[] = [
   { provider: 'openrouter', model: 'openai/o1-preview-2024-09-12', input_cost_per_token: 0.000015, output_cost_per_token: 0.00006, max_input_tokens: 128000, max_output_tokens: 32768, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'openai/o3-mini', input_cost_per_token: 0.0000011, output_cost_per_token: 0.0000044, max_input_tokens: 128000, max_output_tokens: 65536, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'openai/o3-mini-high', input_cost_per_token: 0.0000011, output_cost_per_token: 0.0000044, max_input_tokens: 128000, max_output_tokens: 65536, supports_function_calling: true, supported_actions: 'completion' },
-  // Pygmalionai
+
   { provider: 'openrouter', model: 'pygmalionai/mythalion-13b', input_cost_per_token: 0.000001875, output_cost_per_token: 0.000001875, supports_function_calling: true, supported_actions: 'completion' },
-  // Qwen
+
   { provider: 'openrouter', model: 'qwen/qwen-2.5-coder-32b-instruct', input_cost_per_token: 0.00000018, output_cost_per_token: 0.00000018, max_input_tokens: 33792, max_output_tokens: 33792, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'qwen/qwen-vl-plus', input_cost_per_token: 0.00000021, output_cost_per_token: 0.00000063, max_input_tokens: 8192, max_output_tokens: 2048, supports_vision: true, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'qwen/qwen3-235b-a22b-2507', input_cost_per_token: 0.000000071, output_cost_per_token: 0.0000001, max_input_tokens: 262144, max_output_tokens: 262144, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'qwen/qwen3-235b-a22b-thinking-2507', input_cost_per_token: 0.00000011, output_cost_per_token: 0.0000006, max_input_tokens: 262144, max_output_tokens: 262144, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'qwen/qwen3-coder', input_cost_per_token: 0.00000022, output_cost_per_token: 0.00000095, max_input_tokens: 262100, max_output_tokens: 262100, supports_function_calling: true, supported_actions: 'completion' },
-  // Switchpoint
+
   { provider: 'openrouter', model: 'switchpoint/router', input_cost_per_token: 0.00000085, output_cost_per_token: 0.0000034, max_input_tokens: 131072, max_output_tokens: 131072, supports_function_calling: true, supported_actions: 'completion' },
-  // Undi95
+
   { provider: 'openrouter', model: 'undi95/remm-slerp-l2-13b', input_cost_per_token: 0.000001875, output_cost_per_token: 0.000001875, supports_function_calling: true, supported_actions: 'completion' },
-  // X-Ai
+
   { provider: 'openrouter', model: 'x-ai/grok-4', input_cost_per_token: 0.000003, output_cost_per_token: 0.000015, max_input_tokens: 256000, max_output_tokens: 256000, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'x-ai/grok-4-fast:free', input_cost_per_token: 0, output_cost_per_token: 0, max_input_tokens: 2000000, max_output_tokens: 30000, supports_function_calling: true, supported_actions: 'completion' },
-  // Xiaomi
+
   { provider: 'openrouter', model: 'xiaomi/mimo-v2-flash', input_cost_per_token: 0.00000009, output_cost_per_token: 0.00000029, max_input_tokens: 262144, max_output_tokens: 16384, supports_function_calling: true, supported_actions: 'completion' },
-  // Z-Ai
+
   { provider: 'openrouter', model: 'z-ai/glm-4.6', input_cost_per_token: 0.0000004, output_cost_per_token: 0.00000175, max_input_tokens: 202800, max_output_tokens: 131000, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'z-ai/glm-4.6:exacto', input_cost_per_token: 0.00000045, output_cost_per_token: 0.0000019, max_input_tokens: 202800, max_output_tokens: 131000, supports_function_calling: true, supported_actions: 'completion' },
   { provider: 'openrouter', model: 'z-ai/glm-4.7', input_cost_per_token: 0.0000004, output_cost_per_token: 0.0000015, max_input_tokens: 202752, max_output_tokens: 64000, supports_vision: true, supports_function_calling: true, supported_actions: 'completion' },
@@ -726,8 +726,6 @@ export const FALLBACK_PRICING = {
 }
 
 export function seedPricing(db: Database.Database): void {
-  console.log('[SEED] Seeding model pricing data...')
-  
   const insertPricing = db.prepare(`
     INSERT OR IGNORE INTO model_pricing (
       provider, model, input_cost_per_token, output_cost_per_token,
@@ -818,10 +816,4 @@ export function seedPricing(db: Database.Database): void {
 
   transaction()
   
-  const openaiCount = db.prepare('SELECT COUNT(*) as count FROM model_pricing WHERE provider = ?').get('openai') as { count: number }
-  const anthropicCount = db.prepare('SELECT COUNT(*) as count FROM model_pricing WHERE provider = ?').get('anthropic') as { count: number }
-  const otherCount = db.prepare('SELECT COUNT(*) as count FROM model_pricing WHERE provider IN (?, ?, ?, ?, ?, ?, ?, ?)').get('google', 'xai', 'mistral', 'moonshot', 'deepseek', 'dashscope', 'openrouter', 'vertex_ai') as { count: number }
-  const aliasCount = db.prepare('SELECT COUNT(*) as count FROM model_aliases').get() as { count: number }
-  
-  console.log(`[SEED] ✅ Seeded ${openaiCount.count} OpenAI, ${anthropicCount.count} Anthropic, ${otherCount.count} other provider models, ${aliasCount.count} aliases`)
 }

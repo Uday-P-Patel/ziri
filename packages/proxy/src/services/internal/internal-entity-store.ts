@@ -98,7 +98,6 @@ export class InternalEntityStore implements IInternalEntityStore {
     }
   }
 
-  /** Get entity including soft-deleted (status=0) - for restore flows */
   async getEntityIncludingDeleted(userId: string): Promise<InternalEntity | null> {
     const db = getDatabase()
     const row = db.prepare(`
@@ -109,7 +108,6 @@ export class InternalEntityStore implements IInternalEntityStore {
     return JSON.parse(row.ejson) as InternalEntity
   }
 
-  /** Restore a soft-deleted entity and update attrs */
   async restoreEntity(userId: string, updates: Partial<InternalEntity['attrs']>): Promise<void> {
     const db = getDatabase()
     const existing = await this.getEntityIncludingDeleted(userId)

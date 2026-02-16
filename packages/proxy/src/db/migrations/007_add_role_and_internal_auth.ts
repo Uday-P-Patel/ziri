@@ -8,7 +8,6 @@ export function up(db: Database.Database): void {
   
   if (!hasRole) {
     db.exec('ALTER TABLE auth ADD COLUMN role TEXT')
-    console.log('[MIGRATION 007] Added role column to auth table')
   }
   
 
@@ -19,7 +18,6 @@ export function up(db: Database.Database): void {
 
     if (isFirstRun || !ziriUser.role) {
       db.prepare('UPDATE auth SET role = ? WHERE id = ?').run('admin', 'ziri')
-      console.log('[MIGRATION 007] Set role = admin for ziri user')
     }
   }
   
@@ -28,19 +26,12 @@ export function up(db: Database.Database): void {
   if (hasRole) {
     if (isFirstRun) {
 
-      const nullRoleCount = db.prepare('UPDATE auth SET role = NULL WHERE id != ?').run('ziri').changes
-      if (nullRoleCount > 0) {
-        console.log(`[MIGRATION 007] Set role = NULL for ${nullRoleCount} access users`)
-      }
+      db.prepare('UPDATE auth SET role = NULL WHERE id != ?').run('ziri')
     } else {
 
       try {
-        const nullRoleCount = db.prepare('UPDATE auth SET role = NULL WHERE id != ? AND (role IS NULL OR role = "")').run('ziri').changes
-        if (nullRoleCount > 0) {
-          console.log(`[MIGRATION 007] Set role = NULL for ${nullRoleCount} access users (preserving existing dashboard user roles)`)
-        }
+        db.prepare('UPDATE auth SET role = NULL WHERE id != ? AND (role IS NULL OR role = "")').run('ziri')
       } catch (error: any) {
-
         console.warn('[MIGRATION 007] Could not update access user roles:', error.message)
       }
     }
@@ -66,9 +57,6 @@ export function up(db: Database.Database): void {
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_internal_entities_etype ON internal_entities(etype)
   `)
-  
-  console.log('[MIGRATION 007] Created internal_entities table')
-  
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS internal_schema_policy (
@@ -99,18 +87,12 @@ export function up(db: Database.Database): void {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_internal_schema_policy_unique_schema 
     ON internal_schema_policy(obj_type) WHERE obj_type = 'schema'
   `)
-  
-  console.log('[MIGRATION 007] Created internal_schema_policy table')
 }
 
 export function down(db: Database.Database): void {
 
 
   db.prepare('UPDATE auth SET role = NULL').run()
-  console.log('[MIGRATION 007] Reverted role column (set all to NULL)')
-  
-
   db.exec('DROP TABLE IF EXISTS internal_schema_policy')
   db.exec('DROP TABLE IF EXISTS internal_entities')
-  console.log('[MIGRATION 007] Dropped internal tables')
 }

@@ -1,5 +1,3 @@
- 
-
 import { Router, type Request, type Response } from 'express'
 import { requireAdmin, type AdminRequest } from '../middleware/auth.js'
 import * as userService from '../services/user-service.js'
@@ -7,6 +5,7 @@ import * as dashboardUserService from '../services/dashboard-user-service.js'
 import * as keyService from '../services/key-service.js'
 import { internalAuthorizationService } from '../services/internal/internal-authorization-service.js'
 import { logInternalAction } from '../utils/internal-audit-helpers.js'
+import { SUCCESS_MESSAGES } from '../utils/success-messages.js'
 import type { User } from '../services/user-service.js'
 
 const router: Router = Router()
@@ -16,7 +15,6 @@ router.use(requireAdmin)
 
  
 router.get('/', async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const {
       search,
@@ -24,7 +22,7 @@ router.get('/', async (req: Request, res: Response) => {
       offset,
       sortBy,
       sortOrder,
-      forApiKeys // Query parameter to include dashboard users for API key creation
+      forApiKeys
     } = req.query
     
 
@@ -92,7 +90,6 @@ router.get('/', async (req: Request, res: Response) => {
 
  
 router.get('/:userId', async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const { userId } = req.params
     const user = userService.getUserById(userId)
@@ -123,8 +120,6 @@ router.post('/', async (req: AdminRequest, res: Response) => {
   try {
     const { email, name, group, isAgent, limitRequestsPerMinute, createApiKey } = req.body
 
-    console.log(`[USERS] Create user request - createApiKey value:`, createApiKey, `type:`, typeof createApiKey)
-
     if (!email || !name) {
       res.status(400).json({
         error: 'email and name are required',
@@ -134,7 +129,6 @@ router.post('/', async (req: AdminRequest, res: Response) => {
     }
 
     const shouldCreateApiKey = createApiKey === true || createApiKey === 'true'
-    console.log(`[USERS] Should create API key:`, shouldCreateApiKey)
 
     if (shouldCreateApiKey && req.admin) {
       const principal = `DashboardUser::"${req.admin.userId}"`
@@ -167,14 +161,14 @@ router.post('/', async (req: AdminRequest, res: Response) => {
       res.status(201).json({
         user: result.user,
         apiKey: result.apiKey,
-        message: 'User created successfully. Credentials have been sent to the user\'s email address.'
+        message: SUCCESS_MESSAGES.USER_CREATED_EMAIL_SENT
       })
     } else {
       res.status(201).json({
         user: result.user,
         password: result.password,
         apiKey: result.apiKey,
-        message: 'User created successfully. Save the password - it won\'t be shown again! Email was not sent (email service not configured or failed).'
+        message: SUCCESS_MESSAGES.USER_CREATED_EMAIL_NOT_SENT
       })
     }
 
@@ -336,13 +330,13 @@ router.post('/:userId/reset-password', async (req: Request, res: Response) => {
       res.json({
         password: undefined,
         emailSent: true,
-        message: 'Password reset successfully. The new password has been sent to the user\'s email address.'
+        message: SUCCESS_MESSAGES.USER_PASSWORD_RESET_EMAIL_SENT
       })
     } else {
       res.json({
         password: result.password,
         emailSent: false,
-        message: 'Password reset successfully. Save the password - it won\'t be shown again! Email was not sent (email service not configured or failed).'
+        message: SUCCESS_MESSAGES.USER_PASSWORD_RESET_EMAIL_NOT_SENT
       })
     }
 

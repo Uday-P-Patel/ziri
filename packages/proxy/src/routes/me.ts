@@ -1,14 +1,21 @@
- 
- 
-
 import { Router, type Request, type Response } from 'express'
 import { requireAuth, type AuthenticatedRequest } from '../middleware/jwt-auth.js'
 import { getDatabase } from '../db/index.js'
 import { decrypt } from '../utils/encryption.js'
 import { serviceFactory } from '../services/service-factory.js'
 import * as keyService from '../services/key-service.js'
+import { SUCCESS_MESSAGES } from '../utils/success-messages.js'
 
 const router: Router = Router()
+
+const parseDecimal = (value: any): number => {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') return parseFloat(value) || 0
+  if (value && typeof value === 'object' && value.__extn && value.__extn.fn === 'decimal') {
+    return parseFloat(value.__extn.arg) || 0
+  }
+  return 0
+}
 
  
 router.use(requireAuth)
@@ -65,15 +72,6 @@ router.get('/keys', async (req: AuthenticatedRequest, res: Response) => {
         code: 'INVALID_TOKEN'
       })
       return
-    }
-    
-    const parseDecimal = (value: any): number => {
-      if (typeof value === 'number') return value
-      if (typeof value === 'string') return parseFloat(value) || 0
-      if (value && typeof value === 'object' && value.__extn && value.__extn.fn === 'decimal') {
-        return parseFloat(value.__extn.arg) || 0
-      }
-      return 0
     }
     
     const entityStore = serviceFactory.getEntityStore()
@@ -168,15 +166,6 @@ router.get('/usage', async (req: AuthenticatedRequest, res: Response) => {
       return
     }
     
-    const parseDecimal = (value: any): number => {
-      if (typeof value === 'number') return value
-      if (typeof value === 'string') return parseFloat(value) || 0
-      if (value && typeof value === 'object' && value.__extn && value.__extn.fn === 'decimal') {
-        return parseFloat(value.__extn.arg) || 0
-      }
-      return 0
-    }
-    
     const attrs = userKeyEntity.attrs || {}
     
 
@@ -248,7 +237,7 @@ router.post('/rotate', async (req: AuthenticatedRequest, res: Response) => {
     res.json({
       apiKey: result.apiKey,
       userId: result.userId,
-      message: 'API key rotated successfully. Save the new key - it won\'t be shown again!'
+      message: SUCCESS_MESSAGES.API_KEY_ROTATED
     })
   } catch (error: any) {
     console.error('[ME] Rotate key error:', error)

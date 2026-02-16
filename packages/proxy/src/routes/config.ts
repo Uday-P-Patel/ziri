@@ -1,5 +1,3 @@
- 
-
 import { Router, type Request, type Response } from 'express'
 import { loadConfig } from '../config.js'
 import { getRootKey } from '../utils/root-key.js'
@@ -11,7 +9,6 @@ const router: Router = Router()
 
  
 router.get('/', requireAdmin, async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const config = loadConfig()
     
@@ -68,16 +65,7 @@ router.post('/', requireAdmin, (req: Request, res: Response) => {
     
  
     writeConfig(updatedConfig)
-    
-    console.log('[CONFIG] Configuration updated:', {
-      mode: updatedConfig.mode,
-      server: updatedConfig.server,
-      hasPublicUrl: !!updatedConfig.publicUrl,
-      emailEnabled: updatedConfig.email?.enabled || false,
-      emailProvider: updatedConfig.email?.provider || 'none',
-      logLevel: updatedConfig.logLevel
-    })
-    
+
     res.json({
       success: true,
       message: 'Configuration saved successfully. Restart the proxy server for server settings to take effect.',

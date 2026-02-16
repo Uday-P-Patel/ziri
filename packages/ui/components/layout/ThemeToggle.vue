@@ -26,7 +26,7 @@ onMounted(() => {
     } else {
       isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches
     }
-    // Sync localStorage with cookie value
+
     localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
     applyTheme()
   }
@@ -42,7 +42,7 @@ const applyTheme = () => {
     const themeValue = isDark.value ? 'dark' : 'light'
     document.documentElement.classList.toggle('dark', isDark.value)
     setCookie('theme', themeValue, 365)
-    // Also set localStorage so Monaco theme detection works reliably
+
     localStorage.setItem('theme', themeValue)
     setTheme()
   }

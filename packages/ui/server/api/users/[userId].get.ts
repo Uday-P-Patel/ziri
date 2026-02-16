@@ -1,41 +1,11 @@
- 
+import { proxyJsonRequest } from '../../utils/proxy-request'
 
-export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
-  const proxyUrl = config.public.proxyUrl || 'http://localhost:3100'
-  const rootKey = getHeader(event, 'x-root-key')
+export default defineEventHandler((event) => {
   const userId = getRouterParam(event, 'userId')
-  
-  if (!rootKey) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Root key required'
-    })
-  }
-  
-  try {
-    const response = await fetch(`${proxyUrl}/api/users/${userId}`, {
-      headers: {
-        'X-Root-Key': rootKey
-      }
-    })
-    
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: response.statusText }))
-      throw createError({
-        statusCode: response.status,
-        statusMessage: error.error || error.message || response.statusText
-      })
-    }
-    
-    return await response.json()
-  } catch (error: any) {
-    if (error.statusCode) {
-      throw error
-    }
-    throw createError({
-      statusCode: 500,
-      statusMessage: `Failed to proxy request: ${error.message}`
-    })
-  }
+  return proxyJsonRequest(event, {
+    path: `/api/users/${userId}`,
+    authMode: 'passthrough',
+    authHeaderSource: 'root-key-only',
+    authRequiredMessage: 'Root key required'
+  })
 })

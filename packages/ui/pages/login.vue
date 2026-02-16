@@ -3,10 +3,12 @@
     <!-- Header with theme toggle -->
     <header class="h-14 flex-shrink-0 border-b-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] flex items-center justify-between px-4 md:px-6">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
+        <div class="w-8 h-8 flex-shrink-0 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 dark:from-indigo-400 dark:to-indigo-500 p-1.5 flex items-center justify-center shadow-md shadow-indigo-500/25 dark:shadow-indigo-500/15 ring-1 ring-indigo-500/20 dark:ring-indigo-400/20">
+          <img
+            :src="ziriLogo"
+            alt="Ziri Logo"
+            class="w-full h-full object-contain invert brightness-0 contrast-200"
+          />
         </div>
         <h1 class="text-lg font-bold text-[rgb(var(--text))]">
           ZIRI
@@ -126,6 +128,7 @@
 
 <script setup lang="ts">
 import { useAuth } from '~/composables/useAuth'
+import ziriLogo from '~/assets/logo/ziri.png'
 
 definePageMeta({
   layout: false

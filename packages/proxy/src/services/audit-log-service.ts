@@ -49,14 +49,14 @@ export class AuditLogService {
   }
 
   async log(entry: AuditLogEntry): Promise<number> {
-    // Fetch user name if auth_id is provided
+
     let authName: string | null = null
     if (entry.authId) {
       try {
         const userRecord = this.db.prepare('SELECT name FROM auth WHERE id = ?').get(entry.authId) as { name: string | null } | undefined
         authName = userRecord?.name || null
       } catch (error) {
-        // If user lookup fails, continue without name
+
         console.warn(`[AUDIT] Failed to fetch name for auth_id ${entry.authId}:`, error)
       }
     }

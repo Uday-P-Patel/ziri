@@ -68,7 +68,6 @@ export function initializeEncryptionKey(): string {
  
   const existingKey = getEncryptionKey()
   if (existingKey) {
-    console.log('[ENCRYPTION KEY] Using existing encryption key')
     return existingKey
   }
 
@@ -83,7 +82,6 @@ export function initializeEncryptionKey(): string {
     }
     writeFileSync(ENCRYPTION_KEY_FILE, newKey, { mode: 0o600 })
     chmodSync(ENCRYPTION_KEY_FILE, 0o600)
-    console.log(`[ENCRYPTION KEY] Generated and saved to secure file: ${ENCRYPTION_KEY_FILE}`)
   } catch (error: any) {
  
     console.warn('[ENCRYPTION KEY] Failed to save to secure file, saving to config file instead:', error.message)
@@ -94,7 +92,6 @@ export function initializeEncryptionKey(): string {
         encryptionKey: newKey
       }
       writeConfig(updatedConfig)
-      console.log('[ENCRYPTION KEY] Generated and saved to config file')
     } catch (configError: any) {
       console.error('[ENCRYPTION KEY] Failed to save encryption key to config file:', configError.message)
       console.warn('[ENCRYPTION KEY] Encryption key is in memory only - will be lost on restart!')
@@ -116,7 +113,6 @@ export function saveEncryptionKey(key: string, location: 'file' | 'config'): voi
       }
       writeFileSync(ENCRYPTION_KEY_FILE, key, { mode: 0o600 })
       chmodSync(ENCRYPTION_KEY_FILE, 0o600)
-      console.log(`[ENCRYPTION KEY] Saved to secure file: ${ENCRYPTION_KEY_FILE}`)
     } catch (error: any) {
       throw new Error(`Failed to save encryption key to file: ${error.message}`)
     }
@@ -128,7 +124,6 @@ export function saveEncryptionKey(key: string, location: 'file' | 'config'): voi
         encryptionKey: key
       }
       writeConfig(updatedConfig)
-      console.log('[ENCRYPTION KEY] Saved to config file')
     } catch (error: any) {
       throw new Error(`Failed to save encryption key to config: ${error.message}`)
     }

@@ -76,9 +76,9 @@ export async function createDashboardUser(input: CreateDashboardUserInput): Prom
       input.name,
       passwordHash,
       input.role,
-      1, // status = active
-      0, // is_agent = false
-      null // group = null
+      1,
+      0,
+      null
     )
     
     if (authResult.changes !== 1) {
@@ -115,7 +115,6 @@ export async function createDashboardUser(input: CreateDashboardUserInput): Prom
   
   try {
     transaction()
-    console.log(`[DASHBOARD USER SERVICE] Successfully created dashboard user ${userId} with role ${input.role}`)
   } catch (error: any) {
 
     console.error(`[DASHBOARD USER SERVICE] Transaction failed for user ${userId}:`, error.message)
@@ -166,9 +165,6 @@ export async function createDashboardUser(input: CreateDashboardUserInput): Prom
       text: emailContent.text
     })
     
-    if (emailSent) {
-      console.log(`[DASHBOARD USER SERVICE] Credentials email sent to ${user.email}`)
-    }
   } catch (error: any) {
     console.warn(`[DASHBOARD USER SERVICE] Failed to send email to ${user.email}:`, error.message)
   }

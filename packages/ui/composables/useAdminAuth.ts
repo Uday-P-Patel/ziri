@@ -2,6 +2,7 @@
 
 import { useAdminAuthStore } from '~/stores/admin-auth'
 import { useToast } from './useToast'
+import { extractApiErrorMessage } from './useApiError'
 
 export function useAdminAuth() {
   const adminAuthStore = useAdminAuthStore()
@@ -27,7 +28,7 @@ export function useAdminAuth() {
       
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: response.statusText }))
-        throw new Error(error.error || 'Login failed')
+        throw new Error(extractApiErrorMessage({ data: error }, 'Login failed'))
       }
       
       const data = await response.json()
@@ -61,8 +62,9 @@ export function useAdminAuth() {
       
       return true
     } catch (error: any) {
-      adminAuthStore.setError(error.message || 'Login failed')
-      toast.error(error.message || 'Login failed')
+      const errorMessage = extractApiErrorMessage(error, 'Login failed')
+      adminAuthStore.setError(errorMessage)
+      toast.error(errorMessage)
       return false
     } finally {
       adminAuthStore.setLoading(false)

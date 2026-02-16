@@ -5,6 +5,7 @@ import * as keyService from '../services/key-service.js'
 import { internalEntityStore } from '../services/internal/internal-entity-store.js'
 import { internalAuthorizationService } from '../services/internal/internal-authorization-service.js'
 import { logInternalAction } from '../utils/internal-audit-helpers.js'
+import { SUCCESS_MESSAGES } from '../utils/success-messages.js'
 
 const router: Router = Router()
 
@@ -13,7 +14,6 @@ router.use(requireAdmin)
 
 
 router.get('/', async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const {
       search,
@@ -48,7 +48,6 @@ router.get('/', async (req: Request, res: Response) => {
 
 
 router.get('/:userId', async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const { userId } = req.params
     const user = dashboardUserService.getDashboardUser(userId)
@@ -136,13 +135,13 @@ router.post('/', async (req: AdminRequest, res: Response) => {
     if (result.emailSent) {
       res.status(201).json({
         user: result.user,
-        message: 'Dashboard user created successfully. Credentials have been sent to the user\'s email address.'
+        message: SUCCESS_MESSAGES.DASHBOARD_USER_CREATED_EMAIL_SENT
       })
     } else {
       res.status(201).json({
         user: result.user,
         password: result.password,
-        message: 'Dashboard user created successfully. Save the password - it won\'t be shown again! Email was not sent (email service not configured or failed).'
+        message: SUCCESS_MESSAGES.DASHBOARD_USER_CREATED_EMAIL_NOT_SENT
       })
     }
 

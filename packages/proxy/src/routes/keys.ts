@@ -1,9 +1,8 @@
- 
-
 import { Router, type Request, type Response } from 'express'
 import { requireAdmin } from '../middleware/auth.js'
 import * as keyService from '../services/key-service.js'
 import { logInternalAction } from '../utils/internal-audit-helpers.js'
+import { SUCCESS_MESSAGES } from '../utils/success-messages.js'
 
 const router: Router = Router()
 
@@ -12,7 +11,6 @@ router.use(requireAdmin)
 
  
 router.get('/', async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const keys = keyService.listKeys()
     
@@ -30,7 +28,6 @@ router.get('/', async (req: Request, res: Response) => {
 
  
 router.get('/user/:userId', async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const { userId } = req.params
     const keys = keyService.getKeysByUserId(userId)
@@ -69,7 +66,7 @@ router.post('/', async (req: Request, res: Response) => {
     res.status(201).json({
       apiKey: result.apiKey,
       userId: result.userId,
-      message: 'API key created successfully. Save the key - it won\'t be shown again!'
+      message: SUCCESS_MESSAGES.API_KEY_CREATED
     })
 
     logInternalAction(req, {
@@ -119,7 +116,7 @@ router.post('/:userId/rotate', async (req: Request, res: Response) => {
     res.json({
       apiKey: result.apiKey,
       userId: result.userId,
-      message: 'API key rotated successfully. Save the new key - it won\'t be shown again!'
+      message: SUCCESS_MESSAGES.API_KEY_ROTATED
     })
 
     logInternalAction(req, {

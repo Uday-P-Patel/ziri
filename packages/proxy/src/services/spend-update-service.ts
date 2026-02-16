@@ -2,13 +2,7 @@
 
 import type Database from 'better-sqlite3'
 import { getDatabase } from '../db/index.js'
-
-interface CedarDecimalValue {
-  __extn: {
-    fn: 'decimal'
-    arg: string
-  }
-}
+import { createDecimalValue, type CedarDecimalValue } from '../utils/cedar.js'
 
 interface UserKeyEntity {
   uid: {
@@ -73,13 +67,6 @@ export class SpendUpdateService {
     }
 
  
-    const parseDecimal = (value: CedarDecimalValue | string | undefined): number => {
-      if (!value) return 0
-      if (typeof value === 'string') return parseFloat(value) || 0
-      if (value.__extn && value.__extn.arg) return parseFloat(value.__extn.arg) || 0
-      return 0
-    }
-
     const lastDailyResetStr = entity.attrs.last_daily_reset
     const lastMonthlyResetStr = entity.attrs.last_monthly_reset
 
@@ -142,20 +129,11 @@ export class SpendUpdateService {
     const dailySpendFullPrecision = dailySpendResult.total || 0
     const monthlySpendFullPrecision = monthlySpendResult.total || 0
 
-    console.log(`[SPEND_UPDATE] Calculated from cost_tracking - userKeyId: ${userKeyId}`)
-    console.log(`[SPEND_UPDATE]   Daily period: ${dailyStartISO} to now, total (full precision): ${dailySpendFullPrecision}`)
-    console.log(`[SPEND_UPDATE]   Monthly period: ${monthlyStartISO} to now, total (full precision): ${monthlySpendFullPrecision}`)
-    console.log(`[SPEND_UPDATE]   Adding cost: ${cost} (already stored in cost_tracking)`)
-
- 
     const dailySpendRounded = parseFloat(dailySpendFullPrecision.toFixed(4))
     const monthlySpendRounded = parseFloat(monthlySpendFullPrecision.toFixed(4))
 
-    console.log(`[SPEND_UPDATE] Rounded for entity - dailySpend: ${dailySpendRounded}, monthlySpend: ${monthlySpendRounded}`)
-
- 
-    entity.attrs.current_daily_spend = this.createDecimalValue(dailySpendRounded.toFixed(4))
-    entity.attrs.current_monthly_spend = this.createDecimalValue(monthlySpendRounded.toFixed(4))
+    entity.attrs.current_daily_spend = createDecimalValue(dailySpendRounded.toFixed(4))
+    entity.attrs.current_monthly_spend = createDecimalValue(monthlySpendRounded.toFixed(4))
 
  
     const updateStmt = this.db.prepare(`
@@ -173,21 +151,10 @@ export class SpendUpdateService {
     `)
     const verifyRow = verifyStmt.get(userKeyId) as { ejson: string } | undefined
     if (verifyRow) {
-      const verifyEntity: UserKeyEntity = JSON.parse(verifyRow.ejson)
-      const verifyDailySpend = parseDecimal(verifyEntity.attrs.current_daily_spend)
-      const verifyMonthlySpend = parseDecimal(verifyEntity.attrs.current_monthly_spend)
-      console.log(`[SPEND_UPDATE] Verified after update - dailySpend: ${verifyDailySpend}, monthlySpend: ${verifyMonthlySpend}, changes: ${result.changes}`)
+
     }
   }
 
-  private createDecimalValue(value: string): CedarDecimalValue {
-    return {
-      __extn: {
-        fn: 'decimal',
-        arg: value,
-      },
-    }
-  }
 }
 
  

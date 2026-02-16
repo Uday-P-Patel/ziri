@@ -4,7 +4,8 @@ import { ref } from 'vue'
 import { useConfigStore } from '~/stores/config'
 import { useAdminAuth } from './useAdminAuth'
 import { useToast } from './useToast'
-import { useApiError } from './useApiError'
+import { extractApiErrorMessage, useApiError } from './useApiError'
+import { runWithAuth } from './useApiCall'
 
 export interface User {
   id: string
@@ -44,47 +45,43 @@ export function useUsers() {
     sortBy?: string | null
     sortOrder?: 'asc' | 'desc' | null
   }) => {
-    loading.value = true
     try {
-      const authHeader = getAuthHeader()
-      if (!authHeader) {
-        throw new Error('Please login first')
-      }
+      return await runWithAuth({
+        setLoading: (value) => { loading.value = value },
+        getAuthHeader,
+        onError: (error) => { toast.error(getUserMessage(error)) }
+      }, async (authHeader) => {
+        const queryParams = new URLSearchParams()
+        if (params?.search) queryParams.set('search', params.search)
+        if (params?.limit) queryParams.set('limit', params.limit.toString())
+        if (params?.offset) queryParams.set('offset', params.offset.toString())
+        if (params?.sortBy) queryParams.set('sortBy', params.sortBy)
+        if (params?.sortOrder) queryParams.set('sortOrder', params.sortOrder)
 
+        const url = `/api/users${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': authHeader
+          }
+        })
 
-      const queryParams = new URLSearchParams()
-      if (params?.search) queryParams.set('search', params.search)
-      if (params?.limit) queryParams.set('limit', params.limit.toString())
-      if (params?.offset) queryParams.set('offset', params.offset.toString())
-      if (params?.sortBy) queryParams.set('sortBy', params.sortBy)
-      if (params?.sortOrder) queryParams.set('sortOrder', params.sortOrder)
-
-      const url = `/api/users${queryParams.toString() ? '?' + queryParams.toString() : ''}`
-
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': authHeader
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({ error: response.statusText }))
+          throw new Error(extractApiErrorMessage({ data: err }, 'Failed to load users'))
         }
+
+        const data = await response.json()
+        users.value = data.users || []
+        return { users: data.users || [], total: data.total || 0 }
       })
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: response.statusText }))
-        throw new Error(err.error || err.message || 'Failed to load users')
-      }
-
-      const data = await response.json()
-      users.value = data.users || []
-      return { users: data.users || [], total: data.total || 0 }
     } catch (error: any) {
-      toast.error(getUserMessage(error))
       throw error
-    } finally {
-      loading.value = false
     }
   }
 
-  const createUser = async (input: CreateUserInput): Promise<{ user: User; password?: string; emailSent: boolean }> => {
+  const createUser = async (
+    input: CreateUserInput
+  ): Promise<{ user: User; password?: string; apiKey?: string; emailSent: boolean }> => {
     const authHeader = getAuthHeader()
     if (!authHeader) {
       throw new Error('Please login first')
@@ -102,7 +99,7 @@ export function useUsers() {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: response.statusText }))
-      throw new Error(error.error || 'Failed to create user')
+      throw new Error(extractApiErrorMessage({ data: error }, 'Failed to create user'))
     }
 
     const result = await response.json()
@@ -112,7 +109,8 @@ export function useUsers() {
     return {
       user: result.user,
       password: result.password,
-      apiKey: result.apiKey
+      apiKey: result.apiKey,
+      emailSent: result.emailSent ?? false
     }
   }
 
@@ -134,7 +132,7 @@ export function useUsers() {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: response.statusText }))
-      throw new Error(error.error || 'Failed to update user')
+      throw new Error(extractApiErrorMessage({ data: error }, 'Failed to update user'))
     }
 
     const result = await response.json()
@@ -184,7 +182,7 @@ export function useUsers() {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: response.statusText }))
-      throw new Error(error.error || 'Failed to reset password')
+      throw new Error(extractApiErrorMessage({ data: error }, 'Failed to reset password'))
     }
 
     const result = await response.json()

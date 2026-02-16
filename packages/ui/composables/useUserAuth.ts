@@ -2,6 +2,7 @@
 
 import { useUserAuthStore } from '~/stores/user-auth'
 import { useToast } from './useToast'
+import { extractApiErrorMessage } from './useApiError'
 
 export function useUserAuth() {
   const userAuthStore = useUserAuthStore()
@@ -27,7 +28,7 @@ export function useUserAuth() {
       
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: response.statusText }))
-        throw new Error(error.error || 'Login failed')
+        throw new Error(extractApiErrorMessage({ data: error }, 'Login failed'))
       }
       
       const data = await response.json()
@@ -52,8 +53,9 @@ export function useUserAuth() {
       
       return true
     } catch (error: any) {
-      userAuthStore.setError(error.message || 'Login failed')
-      toast.error(error.message || 'Login failed')
+      const errorMessage = extractApiErrorMessage(error, 'Login failed')
+      userAuthStore.setError(errorMessage)
+      toast.error(errorMessage)
       return false
     } finally {
       userAuthStore.setLoading(false)

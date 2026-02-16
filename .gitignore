@@ -84,6 +84,7 @@ DESIGN_*.md
 
 # Cursor rules
 .cursor/
+.claude/
 
 # scripts
 **/scripts/drop-tables.js

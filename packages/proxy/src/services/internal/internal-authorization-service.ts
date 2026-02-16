@@ -17,7 +17,6 @@ async function loadCedar(): Promise<typeof cedarType> {
   }
   
   cedar = await cedarLoadingPromise
-  console.log('[INTERNAL AUTH] Cedar-WASM loaded successfully')
   return cedar
 }
 
@@ -33,9 +32,9 @@ function parseEntityUid(entityUid: string): { type: string; id: string } {
 }
 
 export interface InternalAuthorizationRequest {
-  principal: string // e.g., "ZiriInternal::DashboardUser::\"ziri\""
-  action: string // e.g., "ZiriInternal::Action::\"create_user\""
-  resourceType: string // e.g., "users"
+  principal: string 
+  action: string 
+  resourceType: string 
   context?: Record<string, any>
 }
 
@@ -58,14 +57,6 @@ export class InternalAuthorizationService implements IInternalAuthorizationServi
       const schemaData = await internalSchemaStore.getSchema()
       const policies = await internalPolicyStore.getPolicies()
       const allEntities = await internalEntityStore.getAllEntities()
-      
-      console.log('[INTERNAL AUTH] Evaluating authorization:', {
-        principal: request.principal,
-        action: request.action,
-        resourceType: request.resourceType,
-        policyCount: policies.length,
-        entityCount: allEntities.length
-      })
       
       const parsePrincipal = parseEntityUid(request.principal)
       const parseAction = parseEntityUid(request.action)
@@ -133,15 +124,6 @@ export class InternalAuthorizationService implements IInternalAuthorizationServi
         entities: cedarEntities
       }
       
-      console.log('[INTERNAL AUTH] Cedar WASM call structure:', {
-        principal: parsePrincipal,
-        action: parseAction,
-        resource: parseResource,
-        context: context,
-        policyCount: Object.keys(policiesMap).length,
-        entityCount: cedarEntities.length
-      })
-      
       const result = cedarModule.isAuthorized(call)
       
       const evaluationTime = Date.now() - startTime
@@ -158,11 +140,6 @@ export class InternalAuthorizationService implements IInternalAuthorizationServi
       const allowed = response.decision === 'allow'
       
       const reason = response.diagnostics?.reason?.join('; ') || undefined
-      
-      console.log('[INTERNAL AUTH] Authorization decision:', allowed ? 'ALLOW' : 'DENY', {
-        reason,
-        evaluationTime: `${evaluationTime}ms`
-      })
       
       return {
         allowed,

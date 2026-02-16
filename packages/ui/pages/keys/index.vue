@@ -6,7 +6,7 @@ import { useToast } from '~/composables/useToast'
 import { useCedarWasm } from '~/composables/useCedarWasm'
 import { useAdminAuth } from '~/composables/useAdminAuth'
 import { useInternalAuth } from '~/composables/useInternalAuth'
-import { useApiError } from '~/composables/useApiError'
+import { extractApiErrorMessage, useApiError } from '~/composables/useApiError'
 import { formatCurrency, formatPercent, maskApiKey } from '~/utils/formatters'
 import { toDecimal, toDecimalOne, toDecimalFour, toIp, normalizeDecimal } from '~/utils/cedar'
 import type { Key, CreateKeyInput, Entity } from '~/types/entity'
@@ -38,13 +38,13 @@ const loadAllUsersForApiKeys = async () => {
     
     if (!response.ok) {
       const err = await response.json().catch(() => ({ error: response.statusText }))
-      throw new Error(err.error || err.message || 'Failed to load users')
+      throw new Error(extractApiErrorMessage({ data: err }, 'Failed to load users'))
     }
     
     const data = await response.json()
     users.value = data.users || []
   } catch (error: any) {
-    console.error('Failed to load users for API key creation:', error)
+
   }
 }
 
@@ -310,7 +310,7 @@ const handleEditKey = async (key: Key) => {
     validationErrors.value = []
     showEditModal.value = true
   } catch (e: any) {
-    toast.error(`Failed to load key for editing: ${e.message}`)
+    toast.error(`Failed to load key for editing: ${getUserMessage(e)}`)
   } finally {
     isEditing.value = false
   }
@@ -453,7 +453,7 @@ const handleDeleteKey = async () => {
     keyToDelete.value = null
     await fetchKeys()
   } catch (e) {
-    // Toast handled by deleteKeyById
+
   } finally {
     isDeleting.value = null
   }
@@ -477,7 +477,7 @@ const handleRotateFromEdit = async () => {
     showKeyModal.value = true
     await fetchKeys()
   } catch (e) {
-    // Toast handled by rotateKey
+
   } finally {
     isRotating.value = null
   }

@@ -18,7 +18,6 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
   const emailConfig = config.email
   
   if (!emailConfig?.enabled) {
-    console.log('[EMAIL] Email disabled, skipping send')
     return false
   }
   
@@ -38,14 +37,6 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
       
       case 'manual':
       default:
- 
-        console.log('[EMAIL] Manual mode - email content:')
-        console.log('='.repeat(70))
-        console.log(`To: ${options.to}`)
-        console.log(`Subject: ${options.subject}`)
-        console.log('---')
-        console.log(options.text || options.html)
-        console.log('='.repeat(70))
         return true
     }
   } catch (error: any) {

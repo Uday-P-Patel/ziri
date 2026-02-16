@@ -88,7 +88,6 @@ export async function createKey(input: CreateKeyInput): Promise<{ apiKey: string
   }
   
   if (!userEntityExists) {
-    console.log(`[KEY SERVICE] User entity not found for user ${input.userId}, creating it now...`)
     const { decrypt } = await import('../utils/encryption.js')
     let userEmail = ''
     let userGroup = ''
@@ -107,14 +106,13 @@ export async function createKey(input: CreateKeyInput): Promise<{ apiKey: string
         email: userEmail,
         group: dbUser.group || '',
         is_agent: dbUser.is_agent === 1,
-        limit_requests_per_minute: 100 // Default limit
+        limit_requests_per_minute: 100
       },
       parents: []
     }
     
     try {
       await entityStore.createEntity(userEntity, 1)
-      console.log(`[KEY SERVICE] ✓ User entity created for user ${input.userId}`)
     } catch (error: any) {
       throw new Error(`Failed to create User entity: ${error.message}`)
     }
@@ -122,8 +120,6 @@ export async function createKey(input: CreateKeyInput): Promise<{ apiKey: string
   
   let userKeyId = await findUserKeyIdForUser(input.userId)
   if (!userKeyId) {
-    console.log(`[KEY SERVICE] UserKey entity not found for user ${input.userId}, creating it now...`)
-    
     const creationTime = new Date().toISOString()
     const newUserKeyId = `uk-${randomBytes(8).toString('hex')}`
     const userKeyEntity = {
@@ -147,7 +143,6 @@ export async function createKey(input: CreateKeyInput): Promise<{ apiKey: string
     try {
       await entityStore.createEntity(userKeyEntity, 1)
       userKeyId = newUserKeyId
-      console.log(`[KEY SERVICE] ✓ UserKey entity created for user ${input.userId}`)
     } catch (error: any) {
       throw new Error(`Failed to create UserKey entity: ${error.message}`)
     }
@@ -163,9 +158,7 @@ export async function createKey(input: CreateKeyInput): Promise<{ apiKey: string
     INSERT INTO user_agent_keys (id, key_value, key_hash, auth_id, status)
     VALUES (?, ?, ?, ?, 'active')
   `).run(keyId, keySuffix, keyHash, input.userId)
-  
-  console.log(`[KEY SERVICE] ✓ API key created for user ${input.userId}`)
-  
+
   return { apiKey, userId: input.userId }
 }
 

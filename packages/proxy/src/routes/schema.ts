@@ -1,5 +1,3 @@
- 
-
 import { Router, type Request, type Response } from 'express'
 import { requireAdmin } from '../middleware/auth.js'
 import { serviceFactory } from '../services/service-factory.js'
@@ -9,7 +7,6 @@ const router: Router = Router()
 
  
 router.get('/', requireAdmin, async (req: Request, res: Response) => {
-  const actionStart = Date.now()
   try {
     const schemaStore = serviceFactory.getSchemaStore()
     const format = req.query.format as string | undefined

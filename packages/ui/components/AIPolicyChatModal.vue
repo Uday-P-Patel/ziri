@@ -26,18 +26,6 @@ const toast = useToast()
 const { getUserMessage } = useApiError()
 
 
-const AVAILABLE_MODELS = {
-  openai: [
-    { value: 'gpt-5.1', label: 'GPT-5.1' },
-    { value: 'gpt-4', label: 'GPT-4' }
-  ],
-  anthropic: [
-    { value: 'claude-opus-4-5-20251101', label: 'Claude Opus 4.5' },
-    { value: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5' }
-  ]
-}
-
-const selectedProvider = ref<string>('')
 const selectedModel = ref<string>('')
 const messages = ref<ExtendedChatMessage[]>([])
 const currentMessage = ref('')
@@ -47,55 +35,52 @@ const schemaText = ref<string>('')
 
 
 const availableModels = computed(() => {
-  const models: Array<{ value: string; label: string; provider: string }> = []
-  
-  const openaiProvider = providers.value.find(p => p.name.toLowerCase() === 'openai')
-  const anthropicProvider = providers.value.find(p => p.name.toLowerCase() === 'anthropic')
-  
-  if (openaiProvider) {
-    AVAILABLE_MODELS.openai.forEach(model => {
-      models.push({ ...model, provider: 'openai' })
-    })
+  const models: Array<{ value: string; label: string; provider: string; displayName: string }> = []
+  for (const provider of providers.value) {
+    if (!provider.hasCredentials || !provider.models?.length) continue
+    for (const modelId of provider.models) {
+      models.push({
+        value: `${provider.name}:${modelId}`,
+        label: modelId,
+        provider: provider.name,
+        displayName: provider.displayName
+      })
+    }
   }
-  
-  if (anthropicProvider) {
-    AVAILABLE_MODELS.anthropic.forEach(model => {
-      models.push({ ...model, provider: 'anthropic' })
-    })
-  }
-  
   return models
+})
+
+const providersWithModels = computed(() => {
+  const seen = new Set<string>()
+  return availableModels.value
+    .map(m => ({ name: m.provider, displayName: m.displayName }))
+    .filter(p => {
+      if (seen.has(p.name)) return false
+      seen.add(p.name)
+      return true
+    })
 })
 
 
 watch(availableModels, (models) => {
-  if (models.length > 0 && !selectedProvider.value) {
-    selectedProvider.value = models[0].provider
+  if (models.length > 0 && !selectedModel.value) {
     selectedModel.value = models[0].value
   }
 }, { immediate: true })
-
-
-watch(selectedProvider, (provider) => {
-  const providerModels = availableModels.value.filter(m => m.provider === provider)
-  if (providerModels.length > 0) {
-    selectedModel.value = providerModels[0].value
-  }
-})
 
 
 onMounted(async () => {
   try {
     const schemaData = await getSchema('cedar')
     schemaText.value = schemaData.schemaCedarText || JSON.stringify(schemaData.schema, null, 2)
-  } catch (e: any) {
-    console.error('Failed to load schema:', e)
+  } catch {
+
   }
-  
+
   try {
     await loadProviders()
-  } catch (e: any) {
-    console.error('Failed to load providers:', e)
+  } catch {
+
   }
 })
 
@@ -117,9 +102,14 @@ watch(isOpen, (open) => {
 })
 
 const sendMessage = async () => {
-  if (!currentMessage.value.trim() || !selectedProvider.value || !selectedModel.value) {
+  if (!currentMessage.value.trim() || !selectedModel.value) {
     return
   }
+
+  const colonIdx = selectedModel.value.indexOf(':')
+  const provider = colonIdx > 0 ? selectedModel.value.slice(0, colonIdx) : ''
+  const model = colonIdx > 0 ? selectedModel.value.slice(colonIdx + 1) : selectedModel.value
+  if (!provider || !model) return
 
   const userMessage: ExtendedChatMessage = {
     role: 'user',
@@ -134,8 +124,8 @@ const sendMessage = async () => {
 
   try {
     const response = await generatePolicy({
-      provider: selectedProvider.value,
-      model: selectedModel.value,
+      provider,
+      model,
       messages: messages.value.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
       cedarSchema: schemaText.value
     })
@@ -159,7 +149,7 @@ const handleUsePolicy = (policyText?: string) => {
   const policy = policyText || generatedPolicy.value
   if (policy) {
 
-    const url = `/rules?create=true&policy=${encodeURIComponent(policy)}`
+    const url = `/policies?create=true&policy=${encodeURIComponent(policy)}`
     window.open(url, '_blank')
   }
 }
@@ -220,12 +210,12 @@ watch([messages, isLoading], () => {
               >
                 <option value="" disabled>Select a model</option>
                 <optgroup 
-                  v-for="provider in ['openai', 'anthropic']" 
-                  :key="provider"
-                  :label="provider === 'openai' ? 'OpenAI' : 'Anthropic'"
+                  v-for="provider in providersWithModels" 
+                  :key="provider.name"
+                  :label="provider.displayName"
                 >
                   <option
-                    v-for="model in availableModels.filter(m => m.provider === provider)"
+                    v-for="model in availableModels.filter(m => m.provider === provider.name)"
                     :key="model.value"
                     :value="model.value"
                   >

@@ -40,7 +40,11 @@ export default defineEventHandler(async (event) => {
       const error = await response.json().catch(() => ({ error: response.statusText }))
       throw createError({
         statusCode: response.status,
-        statusMessage: error.error || error.message || response.statusText
+        statusMessage: typeof error.error === 'string' && error.error.trim().length > 0
+          ? error.error
+          : typeof error.message === 'string' && error.message.trim().length > 0
+            ? error.message
+            : response.statusText
       })
     } catch (e: any) {
       if (e.statusCode) {
