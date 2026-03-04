@@ -101,6 +101,60 @@ Status: 401
 
 Status: 403
 
+## User Login
+
+Log in as a regular (non-admin) user to get a Bearer token for the `/api/me` endpoints.
+
+### Endpoint
+
+```
+POST /api/auth/login
+```
+
+### Request Body
+
+```typescript
+{
+  userId: string       // Required: User ID
+  password: string     // Required: User password
+  deviceId?: string    // Optional: Device identifier
+}
+```
+
+### Example Request
+
+```bash
+curl -X POST http://localhost:3100/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "user-123",
+    "password": "user-password-here"
+  }'
+```
+
+### Success Response
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": 3600,
+  "tokenType": "Bearer",
+  "user": {
+    "userId": "user-123",
+    "email": "alice@example.com",
+    "role": "user",
+    "name": "Alice"
+  }
+}
+```
+
+### Error Responses
+
+Same error codes as Admin Login: `MISSING_CREDENTIALS` (400), `INVALID_CREDENTIALS` (401), `ACCOUNT_DISABLED` (403).
+
+---
+
 ## Token Refresh
 
 Refresh an expired access token using a refresh token.
@@ -152,6 +206,36 @@ Status: 400
 ```
 
 Status: 401
+
+## Logout
+
+Invalidate refresh tokens and end the session.
+
+### Endpoint
+
+```
+POST /api/auth/logout
+```
+
+### Request Body
+
+```typescript
+{
+  refreshToken?: string  // Optional: Specific refresh token to revoke
+}
+```
+
+If no `refreshToken` is provided, the endpoint still returns success.
+
+### Success Response
+
+```json
+{
+  "success": true
+}
+```
+
+---
 
 ## Token Expiration
 

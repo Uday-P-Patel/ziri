@@ -39,7 +39,7 @@ The `input` field can be:
 ```bash
 curl -X POST http://localhost:3100/api/embeddings \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: sk-zs-user-123-abc456" \
+  -H "X-API-Key: ziri-user-123-a1b2c3d4e5f67890" \
   -d '{
     "provider": "openai",
     "model": "text-embedding-3-small",
@@ -52,7 +52,7 @@ Multiple texts:
 ```bash
 curl -X POST http://localhost:3100/api/embeddings \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: sk-zs-user-123-abc456" \
+  -H "X-API-Key: ziri-user-123-a1b2c3d4e5f67890" \
   -d '{
     "provider": "openai",
     "model": "text-embedding-3-small",
@@ -112,7 +112,7 @@ The model you're using doesn't support embeddings. Use an embedding model instea
 import { UserSDK } from "@ziri/sdk";
 
 const sdk = new UserSDK({
-	apiKey: "sk-zs-user-123-abc456",
+	apiKey: "ziri-user-123-a1b2c3d4e5f67890",
 	proxyUrl: "http://localhost:3100",
 });
 

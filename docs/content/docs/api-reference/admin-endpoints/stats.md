@@ -63,4 +63,4 @@ Status: 500
 
 -   See [Audit API](/api-reference/admin-endpoints/audit) for detailed log queries
 -   Check [Costs API](/api-reference/admin-endpoints/costs) for cost summaries
--   Read [Monitoring Guide](/guides/monitoring) for monitoring tips
+-   Read [Monitoring Guide](/docs/guides/monitoring) for monitoring tips

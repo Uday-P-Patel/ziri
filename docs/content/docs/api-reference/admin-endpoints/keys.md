@@ -104,7 +104,7 @@ curl -X POST http://localhost:3100/api/keys \
 
 ```json
 {
-	"apiKey": "sk-zs-user-123-abc456def789",
+	"apiKey": "ziri-user-123-a1b2c3d4e5f67890",
 	"userId": "user-123",
 	"message": "API key created successfully. Save the key - it won't be shown again!"
 }
@@ -157,7 +157,7 @@ curl -X POST http://localhost:3100/api/keys/user-123/rotate \
 
 ```json
 {
-	"apiKey": "sk-zs-user-123-new-key-hash",
+	"apiKey": "ziri-user-123-b9c8d7e6f5a43210",
 	"userId": "user-123",
 	"message": "API key rotated successfully. Save the new key - it won't be shown again!"
 }
@@ -259,12 +259,12 @@ Status: 404
 API keys follow this format:
 
 ```
-sk-zs-{userId}-{hash}
+ziri-{userId}-{hash}
 ```
 
-Example: `sk-zs-user-123-abc456def789`
+Example: `ziri-user-123-a1b2c3d4e5f67890`
 
--   `sk-zs-` - Prefix identifying ZIRI keys
+-   `ziri-` - Prefix identifying ZIRI keys
 -   `{userId}` - User ID extracted from the key
 -   `{hash}` - Random hash for security
 

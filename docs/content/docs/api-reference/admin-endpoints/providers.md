@@ -263,4 +263,4 @@ Common providers:
 
 ## Next Steps
 
--   See [Provider Setup Guide](/guides/provider-setup) for detailed setup
+-   See [Provider Setup Guide](/docs/guides/provider-setup) for detailed setup

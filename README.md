@@ -92,7 +92,7 @@ With the proxy running and an API key ready:
 ```bash
 curl -X POST http://localhost:3100/api/chat/completions \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: sk-zs-your-api-key-here" \
+  -H "X-API-Key: ziri-your-api-key-here" \
   -d '{
     "provider": "openai",
     "model": "gpt-4o-mini",
@@ -120,7 +120,7 @@ npm install @ziri/sdk
 import { UserSDK } from '@ziri/sdk'
 
 const sdk = new UserSDK({
-  apiKey: 'sk-zs-your-api-key-here',
+  apiKey: 'ziri-your-api-key-here',
   proxyUrl: 'http://localhost:3100'
 })
 

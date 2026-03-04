@@ -1,5 +1,5 @@
 # Hugo configuration file
-baseURL: https://docs.ziri.com/
+baseURL: https://ziri.zstrikehq.com/docs/
 languageCode: en-us
 title: Ziri
 
@@ -41,7 +41,7 @@ menu:
               type: search
         - name: GitHub
           weight: 7
-          url: "https://github.com/imfing/hextra-starter-template"
+          url: "https://github.com/zstrikehq/ziri"
           params:
               icon: github
 

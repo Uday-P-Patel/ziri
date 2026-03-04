@@ -65,9 +65,9 @@ Server settings (host, port) require restart. Other settings (email, etc.) take 
 
 ### How are API keys formatted?
 
-Format: `sk-zs-{userId}-{hash}`
+Format: `ziri-{userId}-{hash}`
 
-Example: `sk-zs-user-123-abc456def789`
+Example: `ziri-user-123-a1b2c3d4e5f67890`
 
 ### Can I see my API key again after creation?
 
@@ -198,5 +198,4 @@ docker compose up -d
 
 ## Next Steps
 
--   [Common Issues](/troubleshooting/common-issues) - Common problems
--   [Debugging Guide](/troubleshooting/debugging) - Advanced debugging
+-   [Common Issues](/docs/troubleshooting/common-issues) - Common problems and solutions

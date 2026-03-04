@@ -12,12 +12,12 @@ Think of it as a smart proxy that adds enterprise features to any LLM API: acces
 ## Explore
 
 {{< cards >}}
-{{< card link="/docs/getting-started/introduction" title="Getting Started" icon="lightning-bolt" subtitle="Install ZIRI and make your first request" >}}
-{{< card link="/docs/api-reference" title="API Reference" icon="document-text" subtitle="Complete documentation for all endpoints" >}}
-{{< card link="/docs/sdk" title="SDK" icon="cube" subtitle="Zero-dependency client library for your apps" >}}
-{{< card link="/docs/configuration" title="Configuration" icon="cog" subtitle="Environment variables, config files, email setup" >}}
-{{< card link="/docs/deployment/docker-compose" title="Deployment" icon="server" subtitle="Docker Compose and production setup" >}}
-{{< card link="/docs/guides/policy-examples" title="Guides" icon="academic-cap" subtitle="Policies, providers, user management" >}}
+{{< card link="docs/getting-started/introduction" title="Getting Started" icon="lightning-bolt" subtitle="Install ZIRI and make your first request" >}}
+{{< card link="docs/api-reference" title="API Reference" icon="document-text" subtitle="Complete documentation for all endpoints" >}}
+{{< card link="docs/sdk" title="SDK" icon="cube" subtitle="Zero-dependency client library for your apps" >}}
+{{< card link="docs/configuration" title="Configuration" icon="cog" subtitle="Environment variables, config files, email setup" >}}
+{{< card link="docs/deployment/docker-compose" title="Deployment" icon="server" subtitle="Docker Compose and production setup" >}}
+{{< card link="docs/guides/policy-examples" title="Guides" icon="academic-cap" subtitle="Policies, providers, user management" >}}
 {{< /cards >}}
 
 ## What ZIRI Does
@@ -67,19 +67,19 @@ The proxy server starts on `http://localhost:3100` with the management UI bundle
 ## Next Steps
 
 {{< cards cols="2" >}}
-{{< card link="/docs/getting-started/installation" title="Install ZIRI" icon="download" subtitle="Get ZIRI up and running" >}}
-{{< card link="/docs/guides/first-policy" title="Create Your First Policy" icon="shield-check" subtitle="Learn Cedar policy creation" >}}
-{{< card link="/docs/guides/provider-setup" title="Set Up Providers" icon="server" subtitle="Configure OpenAI, Anthropic, etc." >}}
-{{< card link="/docs/sdk" title="Use the SDK" icon="code" subtitle="Integrate ZIRI into your app" >}}
+{{< card link="docs/getting-started/installation" title="Install ZIRI" icon="download" subtitle="Get ZIRI up and running" >}}
+{{< card link="docs/guides/first-policy" title="Create Your First Policy" icon="shield-check" subtitle="Learn Cedar policy creation" >}}
+{{< card link="docs/guides/provider-setup" title="Set Up Providers" icon="server" subtitle="Configure OpenAI, Anthropic, etc." >}}
+{{< card link="docs/sdk" title="Use the SDK" icon="code" subtitle="Integrate ZIRI into your app" >}}
 {{< /cards >}}
 
 ## Common Use Cases
 
 {{< cards cols="2" >}}
-{{< card link="/docs/examples/real-world-scenarios" title="Multi-Tenant SaaS" icon="office-building" subtitle="Control access and costs per tenant" >}}
-{{< card link="/docs/guides/user-management" title="Enterprise Gateways" icon="users" subtitle="Centralize authorization across teams" >}}
-{{< card link="/docs/guides/policy-examples" title="Development Teams" icon="adjustments" subtitle="Prevent budget overruns with limits" >}}
-{{< card link="/docs/deployment/production" title="Production Apps" icon="chart-bar" subtitle="Compliance-ready audit logs" >}}
+{{< card link="docs/examples/real-world-scenarios" title="Multi-Tenant SaaS" icon="office-building" subtitle="Control access and costs per tenant" >}}
+{{< card link="docs/guides/user-management" title="Enterprise Gateways" icon="users" subtitle="Centralize authorization across teams" >}}
+{{< card link="docs/guides/policy-examples" title="Development Teams" icon="adjustments" subtitle="Prevent budget overruns with limits" >}}
+{{< card link="docs/deployment/production" title="Production Apps" icon="chart-bar" subtitle="Compliance-ready audit logs" >}}
 {{< /cards >}}
 
 ## Architecture Overview

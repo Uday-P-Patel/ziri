@@ -115,4 +115,4 @@ Status: 500
 ## Next Steps
 
 -   Check [Audit API](/api-reference/admin-endpoints/audit) for detailed cost logs
--   Read [Monitoring Guide](/guides/monitoring) for cost monitoring
+-   Read [Monitoring Guide](/docs/guides/monitoring) for cost monitoring

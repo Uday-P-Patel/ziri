@@ -47,7 +47,7 @@ curl -X POST http://localhost:3100/api/users \
 API keys can be created during user creation (`createApiKey: true`) or later from the Keys page/API. The key format is:
 
 ```
-sk-zs-{userId}-{hash}
+ziri-{userId}-{hash}
 ```
 
 ### Viewing Keys

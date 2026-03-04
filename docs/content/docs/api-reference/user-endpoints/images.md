@@ -54,7 +54,7 @@ DALL-E 2:
 ```bash
 curl -X POST http://localhost:3100/api/images/generations \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: sk-zs-user-123-abc456" \
+  -H "X-API-Key: ziri-user-123-a1b2c3d4e5f67890" \
   -d '{
     "provider": "openai",
     "model": "dall-e-3",
@@ -156,7 +156,7 @@ The model you're using doesn't support image generation.
 import { UserSDK } from "@ziri/sdk";
 
 const sdk = new UserSDK({
-	apiKey: "sk-zs-user-123-abc456",
+	apiKey: "ziri-user-123-a1b2c3d4e5f67890",
 	proxyUrl: "http://localhost:3100",
 });
 

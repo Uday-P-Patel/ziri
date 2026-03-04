@@ -12,6 +12,7 @@ ZIRI supports modular email providers:
 -   **SMTP** - Any SMTP server (Gmail, Outlook, custom)
 -   **SendGrid** - SendGrid API
 -   **Mailgun** - Mailgun API
+-   **Resend** - Resend API
 -   **SES** - AWS SES
 -   **Manual** - No outbound email, credentials are returned in API responses
 
@@ -135,6 +136,27 @@ Get your API key from the SendGrid dashboard.
 	}
 }
 ```
+
+## Resend Configuration
+
+```json {filename="config.json"}
+{
+	"email": {
+		"enabled": true,
+		"provider": "resend",
+		"options": {
+			"resend": {
+				"apiKey": "re_your-resend-api-key"
+			}
+		},
+		"fromByProvider": {
+			"resend": "noreply@example.com"
+		}
+	}
+}
+```
+
+Get your API key from the [Resend dashboard](https://resend.com). A from address is required.
 
 ## SES Configuration
 

@@ -15,8 +15,10 @@ new UserSDK(config: UserSDKConfig)
 
 **Parameters**:
 
--   `config.apiKey` (string, required) - ZIRI API key
--   `config.proxyUrl` (string, optional) - ZIRI server URL
+-   `config.apiKey` (string, required) - ZIRI API key (must start with `ziri-`)
+-   `config.proxyUrl` (string | URL, optional) - ZIRI server URL (defaults to `ZIRI_PROXY_URL` env var or `http://localhost:3100`)
+-   `config.timeoutMs` (number, optional) - Request timeout in milliseconds (default: `30000`)
+-   `config.fetch` (function, optional) - Custom fetch implementation (defaults to global `fetch`)
 
 **Throws**: Error if API key format is invalid
 
@@ -121,7 +123,9 @@ Common error messages:
 ```typescript
 interface UserSDKConfig {
 	apiKey: string;
-	proxyUrl?: string;
+	proxyUrl?: string | URL;
+	timeoutMs?: number;
+	fetch?: typeof fetch;
 }
 ```
 

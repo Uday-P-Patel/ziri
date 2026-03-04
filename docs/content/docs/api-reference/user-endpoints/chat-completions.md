@@ -16,7 +16,7 @@ POST /api/chat/completions
 Include your API key in the `X-API-Key` header:
 
 ```bash
-curl -H "X-API-Key: sk-zs-user-123-abc456" \
+curl -H "X-API-Key: ziri-user-123-a1b2c3d4e5f67890" \
   https://your-server.com/api/chat/completions
 ```
 
@@ -46,7 +46,7 @@ curl -H "X-API-Key: sk-zs-user-123-abc456" \
 ```bash
 curl -X POST http://localhost:3100/api/chat/completions \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: sk-zs-user-123-abc456" \
+  -H "X-API-Key: ziri-user-123-a1b2c3d4e5f67890" \
   -d '{
     "provider": "openai",
     "model": "gpt-4o-mini",
@@ -236,7 +236,7 @@ The LLM provider returned an error. Check the error message for details.
 import { UserSDK } from "@ziri/sdk";
 
 const sdk = new UserSDK({
-	apiKey: "sk-zs-user-123-abc456",
+	apiKey: "ziri-user-123-a1b2c3d4e5f67890",
 	proxyUrl: "http://localhost:3100",
 });
 
@@ -277,4 +277,4 @@ console.log(response.choices[0].message.content);
 
 -   See [Embeddings](/api-reference/user-endpoints/embeddings) for text embeddings
 -   Check [Images](/api-reference/user-endpoints/images) for image generation
--   See [Policy Examples](/guides/policy-examples) for policy examples
+-   See [Policy Examples](/docs/guides/policy-examples) for policy examples

@@ -9,19 +9,20 @@ Complete API documentation for all ZIRI endpoints.
 
 ### User Endpoints
 
-Endpoints your applications call to make LLM requests:
+Endpoints your applications call to make LLM requests and manage their profile:
 
 -   [Chat Completions](/docs/api-reference/user-endpoints/chat-completions) - Chat completions with GPT, Claude, etc.
 -   [Embeddings](/docs/api-reference/user-endpoints/embeddings) - Text embeddings
 -   [Images](/docs/api-reference/user-endpoints/images) - Image generation
+-   [User Profile](/docs/api-reference/user-endpoints/me) - View profile, keys, usage, and rotate keys
 
-All user endpoints require an `X-API-Key` header.
+LLM endpoints require an `X-API-Key` header. Profile endpoints require a Bearer token from `/api/auth/login`.
 
 ### Admin Endpoints
 
 Endpoints for managing ZIRI:
 
--   [Authentication](/docs/api-reference/admin-endpoints/authentication) - Admin login, token refresh
+-   [Authentication](/docs/api-reference/admin-endpoints/authentication) - Login, logout, token refresh
 -   [Dashboard Users](/docs/api-reference/admin-endpoints/dashboard-users) - Dashboard/admin user management
 -   [Users](/docs/api-reference/admin-endpoints/users) - User management
 -   [Roles](/docs/api-reference/admin-endpoints/roles) - Role entity management
@@ -34,6 +35,8 @@ Endpoints for managing ZIRI:
 -   [Stats](/docs/api-reference/admin-endpoints/stats) - Statistics and analytics
 -   [Entities](/docs/api-reference/admin-endpoints/entities) - Entity queries
 -   [Costs](/docs/api-reference/admin-endpoints/costs) - Cost summaries
+-   [Authorization Check](/docs/api-reference/admin-endpoints/authorization-check) - Check dashboard permissions
+-   [AI Policy Generation](/docs/api-reference/admin-endpoints/ai-policy) - Generate Cedar policies with AI
 -   [Internal Audit Logs](/docs/guides/internal-audit-logs) - Admin action audit queries (`/api/internal-audit-logs`)
 
 Admin endpoints require a Bearer token from `/api/auth/admin/login`.
@@ -59,7 +62,7 @@ All endpoints are relative to your ZIRI server URL:
 Include the `X-API-Key` header:
 
 ```bash
-curl -H "X-API-Key: sk-zs-user-123-abc456" \
+curl -H "X-API-Key: ziri-user-123-a1b2c3d4e5f67890" \
   https://your-server.com/api/chat/completions
 ```
 

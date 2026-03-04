@@ -177,4 +177,4 @@ The default schema includes:
 
 ## Next Steps
 
--   See [Policy Examples](/guides/policy-examples) for policy usage
+-   See [Policy Examples](/docs/guides/policy-examples) for policy usage

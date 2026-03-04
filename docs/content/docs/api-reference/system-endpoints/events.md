@@ -205,4 +205,4 @@ eventSource.onmessage = (event) => {
 ## Next Steps
 
 -   See [Health API](/api-reference/system-endpoints/health) for health checks
--   Check [Monitoring Guide](/guides/monitoring) for real-time monitoring
+-   Check [Monitoring Guide](/docs/guides/monitoring) for real-time monitoring

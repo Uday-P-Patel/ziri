@@ -160,5 +160,5 @@ Each log entry includes:
 
 ## Next Steps
 
--   Check [Monitoring Guide](/guides/monitoring) for log analysis
+-   Check [Monitoring Guide](/docs/guides/monitoring) for log analysis
 -   Read [Stats API](/api-reference/admin-endpoints/stats) for overview statistics
