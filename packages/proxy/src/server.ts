@@ -116,13 +116,6 @@ async function ensureInitialization() {
   // internal authz is required — let it throw
   await initializeInternalAuth()
 
-  const config = loadConfig()
-  if (config.mode === 'local') {
-    import('./db/seed.js').then(({ seedDefaults }) => seedDefaults()).catch(err => {
-      console.warn('seed failed:', err)
-    })
-  }
-
   initialized = true
 }
 

@@ -31,6 +31,7 @@ const sizeClasses = {
 
 <template>
   <button
+    v-bind="$attrs"
     :type="type"
     :disabled="disabled || loading"
     class="btn"

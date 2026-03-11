@@ -180,9 +180,9 @@ Refer to the docs for the full configuration matrix.
 
 ## Cypress E2E (Full Kickoff Flow)
 
-There is a single, end‑to‑end Cypress spec that exercises the UI by role (`ziri` admin, viewer, user_admin, policy_admin) and validates page access and actions:
+There is a single, end‑to‑end Cypress spec (under the UI package) that exercises the UI by role (`ziri` admin, viewer, user_admin, policy_admin) and validates page access and actions:
 
-- Spec: `cypress/e2e/full-kickoff.cy.ts`
+- Spec: `packages/ui/cypress/e2e/full-kickoff.cy.ts`
 - Runner script: `scripts/e2e-hybrid.mjs`
 
 ### One‑time setup
@@ -209,17 +209,15 @@ This starts:
 Use a fixed root key so admin login is stable across restarts, and wire it into Cypress (PowerShell example):
 
 ```powershell
-$env:ZIRI_ROOT_KEY = "ziri-e2e-root-key"
-$env:ZIRI_ENCRYPTION_KEY = "ziri-e2e-encryption-key-32-bytes!!"
 $env:CYPRESS_ZIRI_USERNAME = "ziri"
-$env:CYPRESS_ZIRI_PASSWORD = $env:ZIRI_ROOT_KEY
+$env:CYPRESS_ZIRI_ROOT_KEY = $env:ZIRI_ROOT_KEY
+$env:CYPRESS_GATEWAY_URL = "https://localhost:3000" # or "http://localhost:3000"
 ```
 
-The Cypress scripts also set:
+The Cypress runner script (`scripts/e2e-hybrid.mjs`) also sets:
 
 - `NODE_TLS_REJECT_UNAUTHORIZED=0`
-- `CYPRESS_BASE_URL=https://localhost:3000`
-- `CYPRESS_PROXY_URL=https://localhost:3100`
+- `CYPRESS_GATEWAY_URL` (defaults to `https://localhost:3000` if not set)
 
 ### Running the full kickoff test
 
@@ -251,10 +249,11 @@ The Cypress scripts also set:
 
 The full‑kickoff spec will:
 
-- Pause at the login screen (`cy.waitForManualLogin()`) so you can log in as `ziri` in the Cypress browser.
-- After you log in once, automatically:
+- If `CYPRESS_ZIRI_ROOT_KEY` is set, automatically log in as `ziri` via the UI (with a few guarded retries to handle the login page becoming responsive), then run the flow.
+- If `CYPRESS_ZIRI_ROOT_KEY` is **not** set, pause at the login screen (`cy.waitForManualLogin()`) so you can log in as `ziri` manually in the Cypress browser.
+- After the initial login, the spec will:
   - Create dashboard users for each role and capture their generated passwords.
-  - Log in as each role (viewer, user_admin, policy_admin, ziri) and click through all pages that role can see.
+  - Log in as each role (viewer, user_admin, policy_admin, admin, ziri) and click through all pages that role can see.
   - Assert that write actions are available when allowed, and hidden/forbidden when not allowed.
 
 All other page‑specific Cypress specs under `cypress/e2e/pages/*.cy.ts` are optional; the full‑kickoff flow does not depend on them.

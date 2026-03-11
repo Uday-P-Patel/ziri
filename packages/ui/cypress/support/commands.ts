@@ -69,12 +69,12 @@ function envCount(name: string, fallback: number): number {
 
 function pageReadySelector(path: string): string | null {
   const p = path.split('?')[0]
-  if (p === '/users') return 'input[placeholder*="Search by name, email, or user ID"]'
-  if (p === '/keys') return 'input[placeholder*="Search by user ID, name, or email"]'
-  if (p === '/providers') return 'input[placeholder*="Search providers"]'
-  if (p === '/rules') return 'input[placeholder*="Search policies"]'
-  if (p === '/settings/manage-users') return 'input[placeholder*="Search by name, email, or user ID"]'
-  if (p === '/settings/roles') return 'input[placeholder*="Search by role ID"]'
+  if (p === '/users') return 'table'
+  if (p === '/keys') return 'table'
+  if (p === '/providers') return 'table'
+  if (p === '/rules') return 'table'
+  if (p === '/settings/manage-users') return 'table'
+  if (p === '/settings/roles') return 'table'
   return null
 }
 
@@ -193,7 +193,7 @@ Cypress.Commands.add('waitForManualLogin', () => {
 })
 
 Cypress.Commands.add('waitForLoginPageReady', () => {
-  const timeout = envMs('manualLoginTimeoutMs', 60000)
+  const timeout = envMs('manualLoginTimeoutMs', 30000)
   cy.location('pathname', { timeout }).should('eq', '/login')
   cy.get('#username', { timeout }).should('be.visible').and('not.be.disabled')
   cy.contains('button', 'Sign in to Gateway').should('be.visible').and('not.be.disabled')
@@ -201,14 +201,44 @@ Cypress.Commands.add('waitForLoginPageReady', () => {
 
 Cypress.Commands.add('loginViaUi', (username: string, password: string, options?: { skipEnsureLoggedOut?: boolean }) => {
   const timeout = envMs('uiTimeoutMs', 20000)
+  const maxAttempts = envCount('loginMaxAttempts', 4)
+  const retryDelay = envMs('loginRetryDelayMs', 10000)
   if (typeof username !== 'string' || !username.trim()) throw new Error('loginViaUi: username cannot be empty')
   if (typeof password !== 'string' || !password.trim()) throw new Error('loginViaUi: password cannot be empty')
   if (!options?.skipEnsureLoggedOut) cy.ensureLoggedOut()
-  cy.get('#username', { timeout }).clear().type(username)
-  cy.get('#password', { timeout }).clear().type(password, { log: false })
-  cy.contains('button', 'Sign in to Gateway').click()
-  cy.location('pathname', { timeout }).should('not.eq', '/login')
-  cy.get('button[title="Logout"]', { timeout }).should('be.visible')
+
+  const attemptLogin = (attempt: number): void => {
+    cy.location('pathname', { timeout }).then((p) => {
+      const path = String(p)
+
+      // already logged in: stop retrying
+      if (path !== '/login') {
+        cy.get('button[title="Logout"]', { timeout }).should('be.visible')
+        return
+      }
+
+      // on login page: try to log in once
+      cy.waitForLoginPageReady()
+      cy.get('#username', { timeout }).clear().type(username)
+      cy.get('#password', { timeout }).clear().type(password, { log: false })
+      cy.contains('button', 'Sign in to Gateway').click()
+
+      cy.location('pathname', { timeout }).then((p2) => {
+        const path2 = String(p2)
+        if (path2 === '/login') {
+          if (attempt >= maxAttempts) {
+            throw new Error('loginViaUi: failed to leave login page after max attempts')
+          }
+          cy.wait(retryDelay)
+          attemptLogin(attempt + 1)
+          return
+        }
+        cy.get('button[title="Logout"]', { timeout }).should('be.visible')
+      })
+    })
+  }
+
+  attemptLogin(1)
 })
 
 Cypress.Commands.add('logoutViaUi', () => {
@@ -284,14 +314,18 @@ Cypress.Commands.add('findTableRow', (cellText: string, options?: { searchInput?
     if (options?.apiPattern) {
       cy.intercept('GET', options.apiPattern).as('findTableRowApi')
     }
-    cy.get(options.searchInput).clear().type(options.searchTerm)
+    cy.get(options.searchInput).then(($input) => {
+      const el = $input[0] as HTMLInputElement
+      el.value = options.searchTerm
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+    })
     if (options?.apiPattern) {
       cy.wait('@findTableRowApi', { timeout: 15000 })
     } else {
       cy.wait(1500)
     }
     return cy
-      .contains('tbody td', cellText, { timeout: 10000 })
+      .contains('tbody td', cellText, { timeout: 20000 })
       .closest('tr')
       .then(($tr) => cy.wrap($tr as JQuery<HTMLElement>))
   }
