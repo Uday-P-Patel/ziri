@@ -19,7 +19,17 @@
 		"build:proxy": "npm run build:proxy --workspace=packages/proxy",
 		"prepare": "npm run postinstall --workspace=packages/ui || true",
 		"start": "node packages/proxy/dist/cli/cli.js start",
-		"ui": "node packages/proxy/dist/cli/cli.js start"
+		"ui": "node packages/proxy/dist/cli/cli.js start",
+		"cypress:open": "cypress open",
+		"cypress:run": "cypress run",
+		"cypress:run:tls": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 CYPRESS_BASE_URL=https://localhost:3000 CYPRESS_PROXY_URL=https://localhost:3100 cypress run",
+		"cypress:open:tls": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 CYPRESS_BASE_URL=https://localhost:3000 CYPRESS_PROXY_URL=https://localhost:3100 cypress open",
+		"e2e:run": "start-server-and-test \"npm run dev\" https-get://localhost:3000/login \"npm run cypress:run:tls\"",
+		"e2e:open": "start-server-and-test \"npm run dev\" https-get://localhost:3000/login \"npm run cypress:open:tls\"",
+		"e2e:hybrid": "node scripts/e2e-hybrid.mjs",
+		"e2e:hybrid:open": "node scripts/e2e-hybrid.mjs --open",
+		"e2e:kickoff": "node scripts/e2e-hybrid.mjs --kickoff",
+		"e2e:kickoff:open": "node scripts/e2e-hybrid.mjs --kickoff --open"
 	},
 	"overrides": {
 		"node-gyp": "^10"
@@ -27,6 +37,9 @@
 	"devDependencies": {
 		"concurrently": "^9.1.2",
 		"cross-env": "^7.0.3",
+		"cypress": "^15.11.0",
+		"kill-port": "^2.0.1",
+		"start-server-and-test": "^2.1.5",
 		"typescript": "^5.8.3"
 	},
 	"engines": {

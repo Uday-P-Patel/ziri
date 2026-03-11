@@ -1,0 +1,35 @@
+name: Cypress E2E (example)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+jobs:
+  cypress-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CYPRESS_ZIRI_USERNAME: ziri
+      CYPRESS_ZIRI_PASSWORD: ${{ secrets.CYPRESS_ZIRI_PASSWORD }}
+      CYPRESS_BASE_URL: https://localhost:3000
+      CYPRESS_PROXY_URL: https://localhost:3100
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Cypress binary
+        run: npx cypress install
+
+      - name: Run E2E suite
+        run: npm run e2e:run
