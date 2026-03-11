@@ -63,9 +63,12 @@ const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
  
 const fetchUsers = async () => {
+  const normalizedSearch = debouncedSearchQuery.value
+    ? debouncedSearchQuery.value.replace(/^-+/, '').trim()
+    : undefined
   try {
     const result = await loadUsers({
-      search: debouncedSearchQuery.value || undefined,
+      search: normalizedSearch,
       limit: itemsPerPage.value,
       offset: (currentPage.value - 1) * itemsPerPage.value,
       sortBy: sortBy.value,
@@ -347,7 +350,7 @@ const closeApiKeyModal = () => {
           </button>
         </div>
       </div>
-      <UiButton v-if="canCreateUser" @click="showCreateModal = true">
+      <UiButton id="users-create-trigger" v-if="canCreateUser" @click="showCreateModal = true">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -357,7 +360,7 @@ const closeApiKeyModal = () => {
 
     <!-- Empty state toolbar (when no users at all) -->
     <div class="flex items-center justify-end gap-4" v-if="users.length === 0 && !loading && !searchQuery">
-      <UiButton v-if="canCreateUser" @click="showCreateModal = true">
+      <UiButton id="users-create-trigger-empty" v-if="canCreateUser" @click="showCreateModal = true">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -446,7 +449,7 @@ const closeApiKeyModal = () => {
           </div>
         </template>
         <template #empty-action>
-          <UiButton v-if="canCreateUser && !searchQuery" @click="showCreateModal = true">
+          <UiButton id="users-create-trigger-table-empty" v-if="canCreateUser && !searchQuery" @click="showCreateModal = true">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
@@ -500,10 +503,10 @@ const closeApiKeyModal = () => {
           </p>
         </div>
         <div class="flex gap-3 justify-end pt-3 border-t border-[rgb(var(--border))]">
-          <UiButton type="button" variant="ghost" @click="showCreateModal = false">
+          <UiButton id="users-create-cancel" type="button" variant="ghost" @click="showCreateModal = false">
             Cancel
           </UiButton>
-          <UiButton type="submit" :loading="isCreatingUser">
+          <UiButton id="users-create-submit" type="submit" :loading="isCreatingUser">
             Create User
           </UiButton>
         </div>
@@ -530,7 +533,7 @@ const closeApiKeyModal = () => {
           </div>
         </div>
         <div class="flex justify-end">
-          <UiButton @click="showPasswordModal = false">
+          <UiButton id="users-password-close" @click="showPasswordModal = false">
             Close
           </UiButton>
         </div>
@@ -557,7 +560,7 @@ const closeApiKeyModal = () => {
           </div>
         </div>
         <div class="flex justify-end">
-          <UiButton @click="closeApiKeyModal">
+          <UiButton id="users-api-key-done" @click="closeApiKeyModal">
             Done
           </UiButton>
         </div>
@@ -577,7 +580,7 @@ const closeApiKeyModal = () => {
           <UiButton variant="ghost" @click="showDeleteModal = false">
             Cancel
           </UiButton>
-          <UiButton variant="danger" @click="handleDeleteUser" :loading="isDeletingUser">
+          <UiButton id="users-delete-confirm" variant="danger" @click="handleDeleteUser" :loading="isDeletingUser">
             Delete User
           </UiButton>
         </div>
@@ -622,7 +625,7 @@ const closeApiKeyModal = () => {
           <UiButton type="button" variant="outline" @click="showResetPasswordModal = false; userToResetPassword = null">
             Cancel
           </UiButton>
-          <UiButton type="button" @click="handleResetPassword" :loading="isResettingPassword" class="bg-amber-500 hover:bg-amber-600 text-white">
+          <UiButton id="users-reset-confirm" type="button" @click="handleResetPassword" :loading="isResettingPassword" class="bg-amber-500 hover:bg-amber-600 text-white">
             Reset Password
           </UiButton>
         </div>

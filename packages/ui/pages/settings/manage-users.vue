@@ -71,9 +71,12 @@ const sortOrder = ref<'asc' | 'desc' | null>(null)
 const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
 const fetchUsers = async () => {
+  const normalizedSearch = debouncedSearchQuery.value
+    ? debouncedSearchQuery.value.replace(/^-+/, '').trim()
+    : undefined
   try {
     const result = await loadUsers({
-      search: debouncedSearchQuery.value || undefined,
+      search: normalizedSearch,
       limit: itemsPerPage.value,
       offset: (currentPage.value - 1) * itemsPerPage.value,
       sortBy: sortBy.value,
@@ -436,7 +439,7 @@ const getRoleBadgeColor = (role: string) => {
           </button>
         </div>
       </div>
-      <UiButton @click="showCreateModal = true">
+      <UiButton id="manage-users-create-trigger" @click="showCreateModal = true">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -446,7 +449,7 @@ const getRoleBadgeColor = (role: string) => {
 
     <!-- Empty state toolbar -->
     <div class="flex items-center justify-end gap-4" v-if="users.length === 0 && !loading && !searchQuery">
-      <UiButton @click="showCreateModal = true">
+      <UiButton id="manage-users-create-trigger-empty" @click="showCreateModal = true">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -561,7 +564,7 @@ const getRoleBadgeColor = (role: string) => {
         </div>
       </template>
       <template #empty-action>
-        <UiButton @click="showCreateModal = true" v-if="!searchQuery">
+        <UiButton id="manage-users-create-trigger-table-empty" @click="showCreateModal = true" v-if="!searchQuery">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -592,10 +595,10 @@ const getRoleBadgeColor = (role: string) => {
         </div>
         
         <div class="flex gap-3 justify-end">
-          <UiButton type="button" variant="ghost" @click="showCreateModal = false">
+          <UiButton id="manage-users-create-cancel" type="button" variant="ghost" @click="showCreateModal = false">
             Cancel
           </UiButton>
-          <UiButton type="submit" :loading="isCreatingUser">
+          <UiButton id="manage-users-create-submit" type="submit" :loading="isCreatingUser">
             Create User
           </UiButton>
         </div>
@@ -665,7 +668,7 @@ const getRoleBadgeColor = (role: string) => {
               readonly
               class="input flex-1 font-mono"
             />
-            <UiButton @click="copyPassword" variant="ghost">
+            <UiButton id="manage-users-password-copy" @click="copyPassword" variant="ghost">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
@@ -674,7 +677,7 @@ const getRoleBadgeColor = (role: string) => {
         </div>
         
         <div class="flex justify-end">
-          <UiButton @click="showPasswordModal = false">
+          <UiButton id="manage-users-password-close" @click="showPasswordModal = false">
             Close
           </UiButton>
         </div>
@@ -693,7 +696,8 @@ const getRoleBadgeColor = (role: string) => {
           <UiButton variant="ghost" @click="showDeleteModal = false">
             Cancel
           </UiButton>
-          <UiButton 
+          <UiButton
+            id="manage-users-delete-confirm"
             variant="danger" 
             @click="handleDeleteUser"
             :loading="isDeletingUser"
@@ -718,6 +722,7 @@ const getRoleBadgeColor = (role: string) => {
             Cancel
           </UiButton>
           <UiButton
+            id="manage-users-reset-confirm"
             :loading="resettingPw"
             class="bg-amber-500 hover:bg-amber-600 text-white"
             @click="handleResetPw"

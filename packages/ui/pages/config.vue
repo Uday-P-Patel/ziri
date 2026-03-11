@@ -556,10 +556,10 @@ const resetToDefaults = async () => {
 
     <!-- Actions -->
     <div class="flex gap-3">
-      <UiButton type="submit" :loading="isSaving" :disabled="!canUpdateConfig">
+      <UiButton id="config-save" type="submit" :loading="isSaving" :disabled="!canUpdateConfig">
         Save Configuration
       </UiButton>
-      <UiButton type="button" variant="ghost" @click="resetToDefaults" :disabled="!canUpdateConfig">
+      <UiButton id="config-reset" type="button" variant="ghost" @click="resetToDefaults" :disabled="!canUpdateConfig">
         Reset
       </UiButton>
     </div>

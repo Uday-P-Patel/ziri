@@ -54,7 +54,8 @@ const pageTitle = computed(() => {
     '/providers': 'LLM Providers',
     '/me': 'My Profile',
     '/settings/manage-users': 'Manage Users',
-    '/settings/internal-audit': 'Internal Logs'
+    '/settings/internal-audit': 'Internal Logs',
+    '/settings/roles': 'Roles'
   }
   
  

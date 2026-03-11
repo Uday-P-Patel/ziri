@@ -37,8 +37,12 @@ const fetchLogs = async () => {
 
     const offset = (currentPage.value - 1) * itemsPerPage.value
 
+    const normalizedSearch = debouncedSearchQuery.value
+      ? debouncedSearchQuery.value.replace(/^-+/, '').trim()
+      : undefined
+
     const result = await listInternalAuditLogs({
-      search: debouncedSearchQuery.value || undefined,
+      search: normalizedSearch,
       userId: filterUserId.value || undefined,
       action: filterAction.value || undefined,
       resourceType: filterResourceType.value || undefined,

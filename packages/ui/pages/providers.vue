@@ -129,9 +129,12 @@ const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
  
 const fetchProviders = async () => {
+  const normalizedSearch = debouncedSearchQuery.value
+    ? debouncedSearchQuery.value.replace(/^-+/, '').trim()
+    : undefined
   try {
     const result = await listProviders({
-      search: debouncedSearchQuery.value || undefined,
+      search: normalizedSearch,
       limit: itemsPerPage.value,
       offset: (currentPage.value - 1) * itemsPerPage.value,
       sortBy: sortBy.value,
@@ -340,7 +343,7 @@ const columns = computed(() => {
           </button>
         </div>
       </div>
-      <UiButton v-if="canCreateProvider" @click="handleOpenCreateModal">
+      <UiButton id="providers-add-trigger" v-if="canCreateProvider" @click="handleOpenCreateModal">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -350,7 +353,7 @@ const columns = computed(() => {
 
     <!-- Empty state toolbar (when no providers at all) -->
     <div class="flex items-center justify-end gap-4" v-if="providers.length === 0 && !loading && !searchQuery">
-      <UiButton v-if="canCreateProvider" @click="handleOpenCreateModal">
+      <UiButton id="providers-add-trigger-empty" v-if="canCreateProvider" @click="handleOpenCreateModal">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -375,7 +378,7 @@ const columns = computed(() => {
       @update:sort="handleSort"
     >
       <template #empty-action>
-        <UiButton v-if="canCreateProvider && !searchQuery" @click="handleOpenCreateModal">
+        <UiButton id="providers-add-trigger-table-empty" v-if="canCreateProvider && !searchQuery" @click="handleOpenCreateModal">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -435,6 +438,7 @@ const columns = computed(() => {
             v-if="canTestProvider"
             size="sm"
             variant="ghost"
+            :id="`providers-test-${row.name}`"
             :disabled="testingProvider === row.name"
             @click="handleTestProvider(row)"
           >
@@ -448,6 +452,7 @@ const columns = computed(() => {
             v-if="canDeleteProvider"
             size="sm"
             variant="ghost"
+            :id="`providers-delete-${row.name}`"
             @click="providerToDelete = row; showDeleteModal = true"
           >
             <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -501,8 +506,8 @@ const columns = computed(() => {
         </div>
         
         <div class="flex justify-end gap-3">
-          <UiButton type="button" variant="ghost" @click="showCreateModal = false">Cancel</UiButton>
-          <UiButton type="submit" :disabled="loading">Add Provider</UiButton>
+          <UiButton id="providers-add-cancel" type="button" variant="ghost" @click="showCreateModal = false">Cancel</UiButton>
+          <UiButton id="providers-add-submit" type="submit" :disabled="loading">Add Provider</UiButton>
         </div>
       </form>
     </UiModal>
@@ -514,7 +519,7 @@ const columns = computed(() => {
       </p>
       <div class="flex justify-end gap-3">
         <UiButton variant="ghost" @click="showDeleteModal = false">Cancel</UiButton>
-        <UiButton variant="danger" @click="handleRemoveProvider" :disabled="loading">Remove</UiButton>
+        <UiButton id="providers-remove-confirm" variant="danger" @click="handleRemoveProvider" :disabled="loading">Remove</UiButton>
       </div>
     </UiModal>
     </template>

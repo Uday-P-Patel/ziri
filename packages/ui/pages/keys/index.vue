@@ -154,9 +154,12 @@ const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
  
 const fetchKeys = async () => {
+  const normalizedSearch = debouncedSearchQuery.value
+    ? debouncedSearchQuery.value.replace(/^-+/, '').trim()
+    : undefined
   try {
     const result = await listKeys({
-      search: debouncedSearchQuery.value || undefined,
+      search: normalizedSearch,
       limit: itemsPerPage.value,
       offset: (currentPage.value - 1) * itemsPerPage.value,
       sortBy: sortBy.value,
@@ -588,7 +591,7 @@ const closeKeyModal = () => {
           <option value="disabled">Disabled</option>
         </select>
       </div>
-      <UiButton v-if="canCreateKey" @click="showCreateModal = true">
+      <UiButton id="keys-create-trigger" v-if="canCreateKey" @click="showCreateModal = true">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -598,7 +601,7 @@ const closeKeyModal = () => {
 
     <!-- Empty state toolbar (when no keys at all) -->
     <div class="flex items-center justify-end gap-4" v-if="keys.length === 0 && !loading && !searchQuery && !filterStatus">
-      <UiButton v-if="canCreateKey" @click="showCreateModal = true">
+      <UiButton id="keys-create-trigger-empty" v-if="canCreateKey" @click="showCreateModal = true">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -724,7 +727,7 @@ const closeKeyModal = () => {
           <UiButton type="button" variant="outline" @click="showCreateModal = false">
             Cancel
           </UiButton>
-          <UiButton type="submit" :loading="isCreating" :disabled="usersWithoutKey.length === 0">
+          <UiButton id="keys-create-submit" type="submit" :loading="isCreating" :disabled="usersWithoutKey.length === 0">
             Create Key
           </UiButton>
         </div>
@@ -803,7 +806,7 @@ const closeKeyModal = () => {
           <UiButton variant="ghost" @click="showDeleteKeyModal = false">
             Cancel
           </UiButton>
-          <UiButton variant="danger" @click="handleDeleteKey" :loading="!!isDeleting">
+          <UiButton id="keys-delete-confirm" variant="danger" @click="handleDeleteKey" :loading="!!isDeleting">
             Delete Key
           </UiButton>
         </div>
@@ -836,7 +839,7 @@ const closeKeyModal = () => {
         </div>
         
         <div class="flex justify-end pt-2">
-          <UiButton @click="closeKeyModal">Done</UiButton>
+          <UiButton id="keys-generated-done" @click="closeKeyModal">Done</UiButton>
         </div>
       </div>
     </UiModal>

@@ -70,7 +70,10 @@ const fetchLogs = async () => {
     if (filterModel.value) params.set('model', filterModel.value)
     if (dateRangeParams.startDate) params.set('startDate', dateRangeParams.startDate)
     if (dateRangeParams.endDate) params.set('endDate', dateRangeParams.endDate)
-    if (searchQuery.value) params.set('search', searchQuery.value)
+    if (debouncedSearchQuery.value) {
+      const normalizedSearch = debouncedSearchQuery.value.replace(/^-+/, '').trim()
+      if (normalizedSearch) params.set('search', normalizedSearch)
+    }
     
  
     if (sortBy.value) {

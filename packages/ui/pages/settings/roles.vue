@@ -40,9 +40,12 @@ const columns = [
 ]
 
 const fetchRoles = async () => {
+  const normalizedSearch = debouncedSearchQuery.value
+    ? debouncedSearchQuery.value.replace(/^-+/, '').trim()
+    : undefined
   try {
     const result = await loadRoles({
-      search: debouncedSearchQuery.value || undefined,
+      search: normalizedSearch,
       limit: itemsPerPage.value,
       offset: (currentPage.value - 1) * itemsPerPage.value,
       usage: true,
@@ -154,6 +157,7 @@ onMounted(async () => {
         </div>
       </div>
       <UiButton
+        id="roles-create-trigger"
         v-if="canCreateRole && !permissionsLoading"
         @click="showCreateModal = true"
       >
@@ -170,6 +174,7 @@ onMounted(async () => {
       v-if="roles.length === 0 && !loading && !searchQuery"
     >
       <UiButton
+        id="roles-create-trigger-empty"
         v-if="canCreateRole && !permissionsLoading"
         @click="showCreateModal = true"
       >
@@ -258,7 +263,7 @@ onMounted(async () => {
       </div>
       <div class="flex justify-end gap-2 pt-2 border-t border-[rgb(var(--border))]">
         <UiButton type="button" variant="outline" @click="showCreateModal = false">Cancel</UiButton>
-        <UiButton type="submit" :disabled="isCreating">Create</UiButton>
+        <UiButton id="roles-create-submit" type="submit" :disabled="isCreating">Create</UiButton>
       </div>
     </form>
   </UiModal>
@@ -275,6 +280,7 @@ onMounted(async () => {
       <div class="flex justify-end gap-2">
         <UiButton variant="ghost" @click="showDeleteModal = false">Cancel</UiButton>
         <UiButton
+          id="roles-delete-confirm"
           variant="danger"
           :disabled="(roleToDelete.usageCount ?? 0) > 0"
           :loading="isDeleting"

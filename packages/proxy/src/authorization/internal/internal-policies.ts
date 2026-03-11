@@ -107,6 +107,20 @@ when {
 };`,
 
 
+  `@id("user-admin-update-entities")
+permit (
+    principal,
+    action,
+    resource
+)
+when {
+    principal.role == "user_admin" &&
+    principal.status == "active" &&
+    action == Action::"update_entities" &&
+    context.resourceType == "entities"
+};`,
+
+
   `@id("policy-admin-access")
 permit (
     principal,
@@ -149,7 +163,8 @@ permit (
         Action::"view_dashboard",
         Action::"view_analytics",
         Action::"view_logs",
-        Action::"list_entities"
+        Action::"list_entities",
+        Action::"list_roles"
     ],
     resource
 )

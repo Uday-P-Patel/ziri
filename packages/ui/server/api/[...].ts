@@ -3,8 +3,8 @@ export default defineEventHandler(async (event) => {
   const proxyUrl = config.public.proxyUrl || 'http://localhost:3100'
 
 
-  const path = event.path || getRequestURL(event).pathname
-  const targetUrl = `${proxyUrl}${path}`
+  const url = getRequestURL(event)
+  const targetUrl = `${proxyUrl}${url.pathname}${url.search || ''}`
 
 
   const incomingHeaders = getHeaders(event)

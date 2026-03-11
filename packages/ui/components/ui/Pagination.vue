@@ -21,6 +21,12 @@ const totalPages = computed(() => {
   return Math.ceil(total / props.itemsPerPage)
 })
 
+watchEffect(() => {
+  const total = totalPages.value
+  if (!total || props.currentPage <= total) return
+  emit('update:currentPage', total)
+})
+
 const goToPage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
     emit('update:currentPage', page)

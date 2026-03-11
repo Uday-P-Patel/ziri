@@ -30,6 +30,8 @@ const sizeClasses = {
   xl: 'max-w-5xl'
 }
 
+const modalTitleAttr = computed(() => (props.title || '').trim())
+
  
 onMounted(() => {
   const handleEscape = (e: KeyboardEvent) => {
@@ -47,10 +49,15 @@ onMounted(() => {
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="modelValue" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        v-if="modelValue"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        id="ui-modal"
+      >
         <!-- Backdrop -->
         <div 
           class="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+          id="ui-modal-backdrop"
           @click="close"
         />
         
@@ -59,6 +66,8 @@ onMounted(() => {
           class="relative w-full animate-scale-in border-2 border-[rgb(var(--border))]"
           :class="sizeClasses[size]"
           :style="{ background: 'rgb(var(--surface))', borderRadius: '8px', overflow: 'hidden' }"
+          id="ui-modal-panel"
+          :data-modal-title="modalTitleAttr"
         >
           <!-- Header -->
           <div v-if="title && closable" class="flex items-center justify-between px-5 pt-5 border-b-2 border-[rgb(var(--border))] pb-5">
@@ -69,6 +78,7 @@ onMounted(() => {
               v-if="closable"
               @click="close"
               class="ml-auto icon-btn"
+              id="ui-modal-close"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
