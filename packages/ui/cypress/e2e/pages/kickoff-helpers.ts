@@ -1,0 +1,444 @@
+type DashboardRole = 'ziri' | 'admin' | 'viewer' | 'user_admin' | 'policy_admin'
+
+export function ensureZiriLogin() {
+  const ziriUser = String(Cypress.env('ziriUsername') || 'ziri')
+  const ziriPass = String(Cypress.env('ziriPassword') || '')
+  if (ziriPass && ziriPass.trim().length > 0) {
+    cy.loginViaUi(ziriUser, ziriPass)
+  } else {
+    cy.waitForManualLogin()
+  }
+}
+
+export function runCoreReadPagesForRole(_role: DashboardRole) {
+  cy.openPageViaSidebar('/', 'Dashboard')
+  cy.openPageViaSidebar('/analytics', 'Analytics')
+  cy.get('select:visible').first().select('7d')
+  cy.contains('span', 'Last 7 days').should('be.visible')
+  cy.openPageViaSidebar('/logs', 'Logs')
+  cy.get('input[placeholder*="Search by user, model, or request ID"]').should('be.visible')
+  cy.openPageViaSidebar('/schema', 'Schema')
+  cy.get('#schema-tab-json').should('be.visible').click()
+  cy.get('#schema-refresh').should('be.visible')
+  cy.get('#schema-tab-cedar').should('be.visible').click()
+  cy.get('#schema-refresh').should('be.visible')
+}
+
+export function assertPoliciesReadOnly() {
+  cy.openPageViaSidebar('/rules', 'Policies')
+  cy.assertButtonHidden('#rules-create-trigger')
+  cy.get('body').then(($body) => {
+    const ai = $body.find('button').filter((_, el) => el.textContent?.includes('Create with AI'))
+    if (ai.length) cy.wrap(ai.first()).should('not.be.visible')
+    if ($body.find('button[title="Edit policy"]').length) cy.wrap($body.find('button[title="Edit policy"]').first()).should('not.be.visible')
+    if ($body.find('button[title="Delete policy"]').length) cy.wrap($body.find('button[title="Delete policy"]').first()).should('not.be.visible')
+  })
+}
+
+export function assertUsersReadOnly() {
+  cy.openPageViaSidebar('/users', 'Users')
+  cy.get('input[placeholder*="Search by name, email, or user ID"]').should('be.visible')
+  cy.assertButtonHidden('#users-create-trigger')
+  cy.get('body').then(($body) => {
+    if ($body.find('button[title="Reset Password"]').length) cy.wrap($body.find('button[title="Reset Password"]').first()).should('not.be.visible')
+    if ($body.find('button[title="Delete User"]').length) cy.wrap($body.find('button[title="Delete User"]').first()).should('not.be.visible')
+  })
+}
+
+export function assertKeysReadOnly() {
+  cy.openPageViaSidebar('/keys', 'API Keys')
+  cy.assertButtonHidden('#keys-create-trigger')
+  cy.get('body').then(($body) => {
+    if ($body.find('button[title="Edit Key"]').length) cy.wrap($body.find('button[title="Edit Key"]').first()).should('not.be.visible')
+    if ($body.find('button[title="Delete key"]').length) cy.wrap($body.find('button[title="Delete key"]').first()).should('not.be.visible')
+  })
+}
+
+export function assertRolesReadOnly() {
+  cy.openPageViaSidebar('/settings/roles', 'Roles')
+  cy.get('input[placeholder*="Search by role ID"]').should('be.visible')
+  cy.get('body').then(($body) => {
+    const createRole = $body.find('button').filter((_, el) => el.textContent?.trim().startsWith('Create Role'))
+    if (createRole.length) cy.wrap(createRole.first()).should('not.be.visible')
+    if ($body.find('button[title="Delete Role"]').length) cy.wrap($body.find('button[title="Delete Role"]').first()).should('not.be.visible')
+  })
+}
+
+export function assertProvidersReadOnly() {
+  cy.openPageViaSidebar('/providers', 'LLM Providers')
+  cy.assertButtonHidden('#providers-add-trigger')
+  cy.get('body').then(($body) => {
+    if ($body.find('button[title="Test"]').length) cy.wrap($body.find('button[title="Test"]').first()).should('not.be.visible')
+    if ($body.find('[id^="providers-delete-"]').length) cy.wrap($body.find('[id^="providers-delete-"]').first()).should('not.be.visible')
+  })
+}
+
+export function runZiriUsersSeed(tag: string, emailTag: string) {
+  cy.openPageViaSidebar('/users', 'Users')
+  const withKeyEmail = `kickoff_key_${emailTag}@example.com`
+  const withoutKeyEmail = `kickoff_nokey_${emailTag}@example.com`
+  cy.get('#users-create-trigger,#users-create-trigger-empty,#users-create-trigger-table-empty').first().click()
+  cy.typeModalInput('Create User', 'Email', withKeyEmail)
+  cy.typeModalInput('Create User', 'Name', `Kickoff Key ${tag}`)
+  cy.getModal('Create User').within(() => {
+    cy.contains('label', 'Create API Key').parent().find('button[role="switch"]').first().then(($t) => {
+      if (String($t.attr('aria-checked')) !== 'true') cy.wrap($t).click({ force: true })
+    })
+  })
+  cy.clickModalButton('Create User', 'Create User')
+  cy.contains('API Key Created', { timeout: 8000 }).then(() => {
+    cy.getModal('API Key Created').within(() => cy.contains('button', 'Copy').first().click())
+    cy.get('#users-api-key-done').click()
+  })
+  cy.contains('Generated Password', { timeout: 8000 }).then(() => {
+    cy.getModal('Generated Password').within(() => cy.contains('button', 'Copy').first().click())
+    cy.get('#users-password-close').click()
+  })
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+  cy.get('#users-create-trigger,#users-create-trigger-empty,#users-create-trigger-table-empty').first().click()
+  cy.typeModalInput('Create User', 'Email', withoutKeyEmail)
+  cy.typeModalInput('Create User', 'Name', `Kickoff NoKey ${tag}`)
+  cy.getModal('Create User').within(() => {
+    cy.contains('label', 'Create API Key').parent().find('button[role="switch"]').first().then(($t) => {
+      if (String($t.attr('aria-checked')) === 'true') cy.wrap($t).click({ force: true })
+    })
+  })
+  cy.clickModalButton('Create User', 'Create User')
+  cy.contains('Generated Password', { timeout: 8000 }).then(() => {
+    cy.getModal('Generated Password').within(() => cy.contains('button', 'Copy').first().click())
+    cy.get('#users-password-close').click()
+  })
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+  cy.findTableRow(withoutKeyEmail, {
+    searchInput: 'input[placeholder*="Search by name, email, or user ID"]',
+    searchTerm: withoutKeyEmail,
+    apiPattern: '**/api/users*'
+  }).find('code').first().invoke('text').then((raw) => {
+    const userId = String(raw || '').trim()
+    expect(userId, 'seed userId').to.not.equal('')
+    return userId
+  }).as('seedUserId')
+
+  cy.findTableRow(withKeyEmail, {
+    searchInput: 'input[placeholder*="Search by name, email, or user ID"]',
+    searchTerm: withKeyEmail,
+    apiPattern: '**/api/users*'
+  }).within(() => cy.get('button[title="Reset Password"]').click())
+  cy.clickModalButton('Reset Password', 'Reset Password')
+  cy.contains('Generated Password', { timeout: 8000 }).then(() => {
+    cy.getModal('Generated Password').within(() => cy.contains('button', 'Copy').first().click())
+    cy.get('#users-password-close').click()
+  })
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+
+  cy.intercept('GET', '**/api/users*').as('usersQuery')
+  cy.get('input[placeholder*="Search by name, email, or user ID"]').clear().type(withoutKeyEmail)
+  cy.wait('@usersQuery').then((itc) => {
+    expect(itc.request.url).to.include(encodeURIComponent(withoutKeyEmail))
+    expect(itc.response?.statusCode).to.eq(200)
+    expect(itc.response?.body).to.have.property('total')
+  })
+  cy.findTableRow(withoutKeyEmail, {
+    searchInput: 'input[placeholder*="Search by name, email, or user ID"]',
+    searchTerm: withoutKeyEmail,
+    apiPattern: '**/api/users*'
+  }).should('be.visible')
+  cy.contains('th', 'Name').click()
+  cy.wait('@usersQuery')
+  cy.contains('th', 'Name').click()
+  cy.wait('@usersQuery')
+}
+
+export function runZiriKeysSeed(tag: string) {
+  const emailTag = String(tag).replace(/-/g, '')
+  const withoutKeyEmail = `kickoff_nokey_${emailTag}@example.com`
+  const withKeyEmail = `kickoff_key_${emailTag}@example.com`
+  cy.get('@seedUserId').then((seedUserId) => {
+    const uid = String(seedUserId)
+    cy.openPageViaSidebar('/keys', 'API Keys')
+    cy.get('#keys-create-trigger,#keys-create-trigger-empty').first().click()
+    cy.getModal('Create API Key').within(() => {
+      cy.get('select:visible').last().select(uid)
+    })
+    cy.clickModalButton('Create API Key', 'Create Key')
+    cy.getModal('API Key').within(() => {
+      cy.get('button[title="Copy to clipboard"]').click()
+    })
+    cy.get('#keys-generated-done').click()
+    cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+    cy.findTableRow(withoutKeyEmail, {
+      searchInput: 'input[placeholder*="Search by user ID, name, or email"]',
+      searchTerm: withoutKeyEmail,
+      apiPattern: '**/api/entities*'
+    }).within(() => cy.get('button[title="Edit Key"]').click())
+    cy.getModal('Edit API Key').within(() => cy.get('button[role="switch"]').first().click({ force: true }))
+    cy.clickModalButton('Edit API Key', 'Update Key')
+    cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+    cy.findTableRow(withoutKeyEmail, {
+      searchInput: 'input[placeholder*="Search by user ID, name, or email"]',
+      searchTerm: withoutKeyEmail,
+      apiPattern: '**/api/entities*'
+    }).contains('Disabled').should('be.visible')
+    cy.findTableRow(withoutKeyEmail, {
+      searchInput: 'input[placeholder*="Search by user ID, name, or email"]',
+      searchTerm: withoutKeyEmail,
+      apiPattern: '**/api/entities*'
+    }).within(() => cy.get('button[title="Edit Key"]').click())
+    cy.clickModalButton('Edit API Key', 'Rotate Key')
+    cy.getModal('API Key').within(() => cy.get('button[title="Copy to clipboard"]').click())
+    cy.get('#keys-generated-done').click()
+    cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+    cy.findTableRow(withoutKeyEmail, {
+      searchInput: 'input[placeholder*="Search by user ID, name, or email"]',
+      searchTerm: withoutKeyEmail,
+      apiPattern: '**/api/entities*'
+    }).within(() => cy.get('button[title="Delete key"]').click({ force: true }))
+    cy.get('#keys-delete-confirm').click()
+    cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+    cy.openPageViaSidebar('/users', 'Users')
+    cy.findTableRow(withoutKeyEmail, {
+      searchInput: 'input[placeholder*="Search by name, email, or user ID"]',
+      searchTerm: withoutKeyEmail,
+      apiPattern: '**/api/users*'
+    }).within(() => cy.get('button[title="Delete User"]').click({ force: true }))
+    cy.get('#users-delete-confirm').click()
+    cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+    cy.findTableRow(withKeyEmail, {
+      searchInput: 'input[placeholder*="Search by name, email, or user ID"]',
+      searchTerm: withKeyEmail,
+      apiPattern: '**/api/users*'
+    }).within(() => cy.get('button[title="Delete User"]').click({ force: true }))
+    cy.get('#users-delete-confirm').click()
+    cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+  })
+}
+
+export function runZiriPoliciesSeed(tag: string) {
+  cy.openPageViaSidebar('/rules', 'Policies')
+  const policyId = `kickoff-policy-${tag}`
+  cy.get('#rules-templates-trigger,#rules-templates-trigger-empty').first().click()
+  cy.getModal('Policy Templates').within(() => cy.get('[id^="rules-template-use-"]').first().click())
+  cy.typeModalInput('Create Policy', 'Policy ID (required)', policyId)
+  const policyDesc = `kickoff ${tag}`
+  cy.typeModalInput('Create Policy', 'Description', policyDesc)
+  cy.clickModalButton('Create Policy', 'Create Policy')
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+  cy.findTableRow(policyId).should('be.visible')
+  cy.findTableRow(policyId).within(() => cy.get('button[title="Edit policy"]').click())
+  const policyDescUpdated = `kickoff updated ${tag}`
+  cy.typeModalInput('Edit Policy', 'Description', policyDescUpdated)
+  cy.getModal('Edit Policy').within(() => cy.get('input[type="checkbox"]').click({ force: true }))
+  cy.clickModalButton('Edit Policy', 'Update Policy')
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+  cy.findTableRow(policyId).contains('Disabled').should('be.visible')
+  cy.findTableRow(policyId).contains(policyDescUpdated).should('be.visible')
+  cy.findTableRow(policyId).within(() => cy.get('button[title="Delete policy"]').click())
+  cy.get('#rules-delete-confirm').click()
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+}
+
+export function runZiriProvidersSeed(tag: string) {
+  cy.openPageViaSidebar('/providers', 'LLM Providers')
+  const providerName = 'openrouter'
+  const providerDisplay = 'OpenRouter'
+  cy.get('body').then(($b) => {
+    if ($b.text().includes(providerDisplay)) {
+      cy.findTableRow(providerDisplay).within(() => cy.get(`#providers-delete-${providerName}`).click())
+      cy.get('#providers-remove-confirm').click()
+      cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+    }
+  })
+  cy.get('#providers-add-trigger,#providers-add-trigger-empty,#providers-add-trigger-table-empty').first().click()
+  cy.getModal('Add Provider').within(() => {
+    cy.get('select:visible').first().select(providerName)
+    cy.get('input[type="password"]:visible').first().clear().type(`sk-kickoff-${tag}`, { log: false })
+  })
+  cy.get('#providers-add-submit').click()
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+  cy.findTableRow(providerDisplay).should('be.visible')
+  cy.findTableRow(providerDisplay).within(() => cy.get(`#providers-test-${providerName}`).click())
+  cy.findTableRow(providerDisplay).within(() => cy.get(`#providers-delete-${providerName}`).click())
+  cy.get('#providers-remove-confirm').click()
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+}
+
+export function runZiriRolesSeed(tag: string) {
+  cy.openPageViaSidebar('/settings/roles', 'Roles')
+  const roleId = `kickoff_role_${tag}`
+  cy.get('#roles-create-trigger,#roles-create-trigger-empty').first().click()
+  cy.getModal('Create role').within(() => cy.get('input[placeholder*="editor"]').clear().type(roleId))
+  cy.get('#roles-create-submit').click()
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+  cy.findTableRow(roleId, {
+    searchInput: 'input[placeholder*="Search by role ID"]',
+    searchTerm: roleId,
+    apiPattern: '**/api/roles*'
+  }).then(($tr) => {
+    cy.wrap($tr).should('be.visible')
+    cy.wrap($tr).within(() => cy.get('button[title="Delete Role"]').should('be.enabled').click({ force: true }))
+  })
+  cy.get('#roles-delete-confirm').should('be.enabled').click()
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+}
+
+export function runZiriConfigSeed(tag: string) {
+  cy.openPageViaSidebar('/config', 'Configuration')
+  const nextUrl = `https://example.com/kickoff-${tag}`
+  const publicUrlInput = () => cy.contains('label', 'Public URL', { timeout: 30000 }).parent().find('input[type="url"]').first()
+  publicUrlInput().clear().type(nextUrl)
+  cy.get('#config-save').click()
+  cy.get('#config-save').should('not.have.attr', 'disabled')
+  cy.reload()
+  cy.openPageViaSidebar('/config', 'Configuration')
+  publicUrlInput().should('have.value', nextUrl)
+  cy.get('#config-reset').click()
+  publicUrlInput().should('have.value', '')
+  cy.get('#emailEnabled').should('not.be.checked')
+}
+
+export function runZiriSchemaSeed() {
+  cy.openPageViaSidebar('/schema', 'Schema')
+  cy.get('#schema-refresh').should('be.visible').click()
+  cy.get('#schema-tab-json').click()
+  cy.get('#schema-tab-json').should('exist')
+  cy.contains('span', 'READ').should('be.visible')
+  cy.get('#schema-refresh').click()
+  cy.get('#schema-tab-cedar').click()
+  cy.get('#schema-tab-cedar').should('exist')
+  cy.contains('span', 'READ').should('be.visible')
+  cy.contains('button', 'Simplified').click()
+  cy.get('#schema-refresh').should('be.visible').click()
+  cy.get('#schema-tab-json').click()
+  cy.get('#schema-tab-cedar').click()
+  cy.get('#schema-tab-json').click()
+  cy.get('#schema-refresh').click()
+}
+
+const manageUsersSearch = 'input[placeholder*="Search by name, email, or user ID"]'
+const manageUsersApi = '**/api/dashboard-users*'
+
+export function createFourDashboardUsers(tag: string, emailTag: string) {
+  const dashViewerEmail = `kickoff_viewer_${emailTag}@example.com`
+  const dashUserAdminEmail = `kickoff_useradmin_${emailTag}@example.com`
+  const dashPolicyAdminEmail = `kickoff_policyadmin_${emailTag}@example.com`
+  const dashAdminEmail = `kickoff_admin_${emailTag}@example.com`
+
+  cy.openPageViaSidebar('/settings/manage-users', 'Manage Users')
+  cy.get('#manage-users-create-trigger,#manage-users-create-trigger-empty,#manage-users-create-trigger-table-empty').first().click()
+  cy.getModal('Create Dashboard User').within(() => {
+    cy.contains('label', 'Email').parent().find('input').clear().type(dashViewerEmail)
+    cy.contains('label', 'Name').parent().find('input').clear().type(`Kickoff Viewer ${tag}`)
+    cy.get('select:visible').last().select('viewer')
+  })
+  cy.get('#manage-users-create-submit').click()
+  cy.contains('Generated Password', { timeout: 8000 })
+  cy.getModal('Generated Password').find('input[readonly]:visible').first().invoke('val').should('not.be.empty').then((v) => {
+    cy.wrap(String(v || '').trim()).as('viewerPass')
+  })
+  cy.get('#manage-users-password-close').click()
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+
+  cy.get('#manage-users-create-trigger,#manage-users-create-trigger-empty,#manage-users-create-trigger-table-empty').first().click()
+  cy.getModal('Create Dashboard User').within(() => {
+    cy.contains('label', 'Email').parent().find('input').clear().type(dashUserAdminEmail)
+    cy.contains('label', 'Name').parent().find('input').clear().type(`Kickoff UserAdmin ${tag}`)
+    cy.get('select:visible').last().select('user_admin')
+  })
+  cy.get('#manage-users-create-submit').click()
+  cy.contains('Generated Password', { timeout: 8000 })
+  cy.getModal('Generated Password').find('input[readonly]:visible').first().invoke('val').should('not.be.empty').then((v) => {
+    cy.wrap(String(v || '').trim()).as('userAdminPass')
+  })
+  cy.get('#manage-users-password-close').click()
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+
+  cy.get('#manage-users-create-trigger,#manage-users-create-trigger-empty,#manage-users-create-trigger-table-empty').first().click()
+  cy.getModal('Create Dashboard User').within(() => {
+    cy.contains('label', 'Email').parent().find('input').clear().type(dashPolicyAdminEmail)
+    cy.contains('label', 'Name').parent().find('input').clear().type(`Kickoff PolicyAdmin ${tag}`)
+    cy.get('select:visible').last().select('policy_admin')
+  })
+  cy.get('#manage-users-create-submit').click()
+  cy.contains('Generated Password', { timeout: 8000 })
+  cy.getModal('Generated Password').find('input[readonly]:visible').first().invoke('val').should('not.be.empty').then((v) => {
+    cy.wrap(String(v || '').trim()).as('policyAdminPass')
+  })
+  cy.get('#manage-users-password-close').click()
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+
+  cy.get('#manage-users-create-trigger,#manage-users-create-trigger-empty,#manage-users-create-trigger-table-empty').first().click()
+  cy.getModal('Create Dashboard User').within(() => {
+    cy.contains('label', 'Email').parent().find('input').clear().type(dashAdminEmail)
+    cy.contains('label', 'Name').parent().find('input').clear().type(`Kickoff Admin ${tag}`)
+    cy.get('select:visible').last().select('admin')
+  })
+  cy.get('#manage-users-create-submit').click()
+  cy.contains('Generated Password', { timeout: 8000 })
+  cy.getModal('Generated Password').find('input[readonly]:visible').first().invoke('val').should('not.be.empty').then((v) => {
+    cy.wrap(String(v || '').trim()).as('adminPass')
+  })
+  cy.get('#manage-users-password-close').click()
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+
+  cy.findTableRow(dashViewerEmail, { searchInput: manageUsersSearch, searchTerm: dashViewerEmail, apiPattern: manageUsersApi }).within(() => cy.get('button[title="Edit User"]').click())
+  cy.getModal('Edit Dashboard User').within(() => {
+    cy.contains('label', 'Name').parent().find('input').clear().type(`viewer updated ${tag}`)
+  })
+  cy.clickModalButton('Edit Dashboard User', 'Update User')
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+  cy.findTableRow(dashViewerEmail, { searchInput: manageUsersSearch, searchTerm: dashViewerEmail, apiPattern: manageUsersApi }).contains(`viewer updated ${tag}`).should('be.visible')
+
+  cy.findTableRow(dashUserAdminEmail, { searchInput: manageUsersSearch, searchTerm: dashUserAdminEmail }).within(() => cy.get('button[title="Reset Password"]').click())
+  cy.get('#manage-users-reset-confirm').click()
+  cy.contains('Generated Password', { timeout: 8000 })
+  cy.getModal('Generated Password').find('input[readonly]:visible').first().invoke('val').should('not.be.empty').then((v) => {
+    cy.wrap(String(v || '').trim()).as('userAdminPass')
+  })
+  cy.get('#manage-users-password-close').click()
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+
+  cy.findTableRow(dashPolicyAdminEmail, {
+    searchInput: manageUsersSearch,
+    searchTerm: dashPolicyAdminEmail,
+    apiPattern: manageUsersApi
+  }).within(() => cy.get('button[title="Disable User"]').click({ force: true }))
+  cy.findTableRow(dashPolicyAdminEmail, { searchInput: manageUsersSearch, searchTerm: dashPolicyAdminEmail }).contains('Disabled').should('be.visible')
+  cy.findTableRow(dashPolicyAdminEmail, { searchInput: manageUsersSearch, searchTerm: dashPolicyAdminEmail }).within(() => cy.get('button[title="Enable User"]').click({ force: true }))
+  cy.findTableRow(dashPolicyAdminEmail, { searchInput: manageUsersSearch, searchTerm: dashPolicyAdminEmail }).contains('Active').should('be.visible')
+
+  cy.findTableRow('ziri', { searchInput: manageUsersSearch, searchTerm: 'ziri', apiPattern: manageUsersApi }).within(() => {
+    cy.get('button[title="Edit User"]').should('not.exist')
+    cy.get('button[title="Delete User"]').should('not.exist')
+    cy.get('button[title="Disable User"]').should('not.exist')
+    cy.get('button[title="Enable User"]').should('not.exist')
+  })
+  cy.get('#manage-users-create-trigger,#manage-users-create-trigger-empty,#manage-users-create-trigger-table-empty').first().click()
+  cy.getModal('Create Dashboard User').within(() => {
+    cy.get('select:visible').last().find('option[value="admin"]').should('not.be.disabled')
+  })
+  cy.clickModalButton('Create Dashboard User', 'Cancel')
+  cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+}
+
+export function deleteFourDashboardUsers(emailTag: string) {
+  const dashViewerEmail = `kickoff_viewer_${emailTag}@example.com`
+  const dashUserAdminEmail = `kickoff_useradmin_${emailTag}@example.com`
+  const dashPolicyAdminEmail = `kickoff_policyadmin_${emailTag}@example.com`
+  const dashAdminEmail = `kickoff_admin_${emailTag}@example.com`
+  cy.openPageViaSidebar('/settings/manage-users', 'Manage Users')
+  for (const email of [dashViewerEmail, dashUserAdminEmail, dashPolicyAdminEmail, dashAdminEmail]) {
+    cy.findTableRow(email, { searchInput: manageUsersSearch, searchTerm: email, apiPattern: manageUsersApi }).find('button[title="Delete User"]').click({ force: true })
+    cy.get('#manage-users-delete-confirm').click()
+    cy.get('#ui-modal-backdrop', { timeout: 30000 }).should('not.exist')
+    cy.contains('td', email).should('not.exist')
+  }
+}
+
+export const dashEmails = (emailTag: string) => ({
+  viewer: `kickoff_viewer_${emailTag}@example.com`,
+  userAdmin: `kickoff_useradmin_${emailTag}@example.com`,
+  policyAdmin: `kickoff_policyadmin_${emailTag}@example.com`,
+  admin: `kickoff_admin_${emailTag}@example.com`
+})
+
+export { manageUsersSearch, manageUsersApi }
