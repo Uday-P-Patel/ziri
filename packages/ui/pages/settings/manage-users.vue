@@ -617,7 +617,7 @@ const getRoleBadgeColor = (role: string) => {
           >
             <option 
               value="admin" 
-              :disabled="!canUpdateAdmin && (selectedUser?.role === 'admin' || editUser.role === 'admin')"
+              :disabled="!canUpdateAdmin"
             >
               Admin
             </option>
