@@ -28,6 +28,7 @@ const showResetPasswordModal = ref(false)
 const generatedPassword = ref<string | undefined>(undefined)
 const generatedApiKey = ref('')
 const selectedUser = ref<User | null>(null)
+const userToEdit = ref<User | null>(null)
 const userToDelete = ref<User | null>(null)
 const userToResetPassword = ref<User | null>(null)
 
@@ -35,6 +36,8 @@ const userToResetPassword = ref<User | null>(null)
 const isCreatingUser = ref(false)
 const isResettingPassword = ref(false)
 const isDeletingUser = ref(false)
+const isUpdatingUser = ref(false)
+const showEditModal = ref(false)
 
  
 const newUser = reactive<CreateUserInput>({
@@ -44,6 +47,16 @@ const newUser = reactive<CreateUserInput>({
   isAgent: false,
   limitRequestsPerMinute: 100,
   createApiKey: true,
+  roleId: undefined
+})
+
+const editUser = reactive<{
+  name: string
+  tenant: string
+  roleId?: string
+}>({
+  name: '',
+  tenant: '',
   roleId: undefined
 })
 
@@ -117,16 +130,15 @@ const handleCreateUser = async () => {
     toast.warning('Email and name are required')
     return
   }
-  
 
   const check = await checkAction('create_user', 'users')
   if (!check.allowed) {
     toast.error('You do not have permission to create users')
     return
   }
-  
+
   if (isCreatingUser.value) return
-  
+
   try {
     isCreatingUser.value = true
     const result = await createUser(newUser)
@@ -158,10 +170,49 @@ const handleCreateUser = async () => {
       createApiKey: true,
       roleId: undefined
     })
+
+    await fetchUsers()
   } catch (error: any) {
     toast.error(`Failed to create user: ${getUserMessage(error)}`)
   } finally {
     isCreatingUser.value = false
+  }
+}
+
+const openEditModal = (user: User) => {
+  if (!canUpdateUser.value) return
+  userToEdit.value = user
+  editUser.name = user.name
+  editUser.tenant = user.tenant || ''
+  editUser.roleId = user.roleId
+  selectedUser.value = user
+  showEditModal.value = true
+}
+
+const handleUpdateUser = async () => {
+  if (!userToEdit.value || isUpdatingUser.value) return
+
+  const check = await checkAction('update_user', 'users')
+  if (!check.allowed) {
+    toast.error('You do not have permission to update users')
+    return
+  }
+
+  try {
+    isUpdatingUser.value = true
+    await updateUser(userToEdit.value.userId, {
+      name: editUser.name.trim(),
+      tenant: editUser.tenant.trim() || undefined,
+      roleId: editUser.roleId || undefined
+    })
+    userToEdit.value = null
+    selectedUser.value = null
+    showEditModal.value = false
+    await fetchUsers()
+  } catch (error: any) {
+    toast.error(`Failed to update user: ${getUserMessage(error)}`)
+  } finally {
+    isUpdatingUser.value = false
   }
 }
 
@@ -204,6 +255,12 @@ const handleDeleteUser = async () => {
     showDeleteModal.value = false
     userToDelete.value = null
     toast.success('User deleted')
+    await fetchUsers()
+    const total = totalUsers.value
+    const maxIndex = (currentPage.value - 1) * itemsPerPage.value
+    if (currentPage.value > 1 && maxIndex >= total) {
+      currentPage.value = currentPage.value - 1
+    }
   } catch (error: any) {
     toast.error(`Failed to delete user: ${getUserMessage(error)}`)
   } finally {
@@ -419,6 +476,18 @@ const copyApiKey = () => {
         </template>
         <template #actions="{ row }">
           <div class="flex gap-2">
+            <UiButton
+              v-if="canUpdateUser"
+              variant="ghost"
+              size="sm"
+              @click="openEditModal(row)"
+              :disabled="row.userId === 'ziri'"
+              title="Edit User"
+            >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            </UiButton>
             <UiButton
               v-if="canResetPassword && row.userId !== 'ziri'"
               variant="ghost"

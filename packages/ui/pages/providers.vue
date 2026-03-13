@@ -162,33 +162,34 @@ const paginatedProviders = computed(() => {
 })
 
 const handleAddProvider = async () => {
-
   const check = await checkAction('create_provider', 'providers')
   if (!check.allowed) {
     toast.error('You do not have permission to create providers')
     return
   }
-  
+
   try {
     if (!newProvider.apiKey || !newProvider.providerType) {
       toast.error('Please provide provider type and API key')
       return
     }
-    
+
     newProvider.name = newProvider.providerType
-    
+
     await addProvider({
       name: newProvider.name,
       apiKey: newProvider.apiKey
     })
-    
+
     toast.success(`${newProvider.name} added`)
     showCreateModal.value = false
-    
- 
+
     newProvider.name = ''
     newProvider.providerType = 'openai'
     newProvider.apiKey = ''
+
+    currentPage.value = 1
+    await fetchProviders()
   } catch (e: any) {
     toast.error(getUserMessage(e))
   }
@@ -209,6 +210,12 @@ const handleRemoveProvider = async () => {
     toast.success(`${providerToDelete.value.name} removed`)
     showDeleteModal.value = false
     providerToDelete.value = null
+    await fetchProviders()
+    const total = totalProviders.value
+    const maxIndex = (currentPage.value - 1) * itemsPerPage.value
+    if (currentPage.value > 1 && maxIndex >= total) {
+      currentPage.value = currentPage.value - 1
+    }
   } catch (e: any) {
     toast.error(getUserMessage(e))
   }
