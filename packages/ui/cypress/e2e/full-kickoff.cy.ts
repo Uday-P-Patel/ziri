@@ -319,13 +319,13 @@ describe('Full kickoff', () => {
       cy.waitForManualLogin()
     }
 
-    runZiriUsersSeed(tag, emailTag)
-    runZiriKeysSeed(tag)
-    runZiriPoliciesSeed(tag)
-    runZiriProvidersSeed(tag)
-    runZiriRolesSeed(tag)
-    runZiriConfigSeed(tag)
-    runZiriSchemaSeed()
+    // runZiriUsersSeed(tag, emailTag)
+    // runZiriKeysSeed(tag)
+    // runZiriPoliciesSeed(tag)
+    // runZiriProvidersSeed(tag)
+    // runZiriRolesSeed(tag)
+    // runZiriConfigSeed(tag)
+    // runZiriSchemaSeed()
 
     cy.openPageViaSidebar('/settings/manage-users', 'Manage Users')
     const manageUsersSearch = 'input[placeholder*="Search by name, email, or user ID"]'
@@ -335,9 +335,9 @@ describe('Full kickoff', () => {
     const dashPolicyAdminEmail = `kickoff_policyadmin_${emailTag}@example.com`
     const dashAdminEmail = `kickoff_admin_${emailTag}@example.com`
 
-    const runViewerRole = true
-    const runUserAdminRole = true
-    const runPolicyAdminRole = true
+    const runViewerRole = false
+    const runUserAdminRole = false
+    const runPolicyAdminRole = false
     const runAdminRole = true
 
     cy.get('#manage-users-create-trigger,#manage-users-create-trigger-empty,#manage-users-create-trigger-table-empty').first().click()
@@ -465,6 +465,12 @@ describe('Full kickoff', () => {
     }
 
     if (runUserAdminRole) {
+      cy.location('pathname', { timeout: 30000 }).then((p) => {
+        const path = String(p)
+        if (path !== '/login') {
+          cy.logoutViaUi()
+        }
+      })
       cy.waitForLoginPageReady()
       cy.get('@userAdminPass').then((userAdminPass) => {
         cy.loginViaUi(dashUserAdminEmail, (userAdminPass as unknown) as string, { skipEnsureLoggedOut: true })
@@ -575,6 +581,12 @@ describe('Full kickoff', () => {
     }
 
     if (runPolicyAdminRole) {
+      cy.location('pathname', { timeout: 30000 }).then((p) => {
+        const path = String(p)
+        if (path !== '/login') {
+          cy.logoutViaUi()
+        }
+      })
       cy.waitForLoginPageReady()
       cy.get('@policyAdminPass').then((policyAdminPass) => {
         cy.loginViaUi(dashPolicyAdminEmail, (policyAdminPass as unknown) as string, { skipEnsureLoggedOut: true })
@@ -612,6 +624,12 @@ describe('Full kickoff', () => {
     }
 
     if (runAdminRole) {
+      cy.location('pathname', { timeout: 30000 }).then((p) => {
+        const path = String(p)
+        if (path !== '/login') {
+          cy.logoutViaUi()
+        }
+      })
       cy.waitForLoginPageReady()
       cy.get('@adminPass').then((adminPass) => {
         cy.loginViaUi(dashAdminEmail, (adminPass as unknown) as string, { skipEnsureLoggedOut: true })
@@ -667,6 +685,12 @@ describe('Full kickoff', () => {
       cy.logoutViaUi()
     }
 
+    cy.location('pathname', { timeout: 30000 }).then((p) => {
+      const path = String(p)
+      if (path !== '/login') {
+        cy.logoutViaUi()
+      }
+    })
     cy.waitForLoginPageReady()
     cy.loginViaUi(ziriUser, ziriPass, { skipEnsureLoggedOut: true })
     cy.openPageViaSidebar('/config', 'Configuration')

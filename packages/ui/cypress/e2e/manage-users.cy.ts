@@ -39,7 +39,7 @@ describe('Manage Users security invariants', () => {
     const tag = uniqueSuffix()
     let nonZiri: SeededDashUser
 
-    seedDashUser('admin', `nonziri-${tag}`).then((u) => {
+    seedDashUser('admin', `subadmin-${tag}`).then((u) => {
       nonZiri = u
       expect(nonZiri.password, 'non-ziri admin password required').to.be.a('string').and.not.empty
       cy.loginAsDashboardUser(nonZiri.email, String(nonZiri.password))
@@ -58,7 +58,7 @@ describe('Manage Users security invariants', () => {
     const tag = uniqueSuffix()
     let nonZiri: SeededDashUser
 
-    seedDashUser('admin', `nonziri-create-${tag}`).then((u) => {
+    seedDashUser('admin', `subadmin-create-${tag}`).then((u) => {
       nonZiri = u
       expect(nonZiri.password, 'non-ziri admin password required').to.be.a('string').and.not.empty
 
@@ -95,7 +95,7 @@ describe('Manage Users security invariants', () => {
     let adminTarget: SeededDashUser
     let token = ''
 
-    seedDashUser('admin', `nonziri-rbac-${tag}`).then((u) => {
+    seedDashUser('admin', `subadmin-rbac-${tag}`).then((u) => {
       nonZiri = u
       expect(nonZiri.password, 'non-ziri admin password required').to.be.a('string').and.not.empty
       return seedDashUser('viewer', `viewer-rbac-${tag}`)
