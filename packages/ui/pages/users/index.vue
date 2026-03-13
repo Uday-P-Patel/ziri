@@ -118,22 +118,20 @@ const handleCreateUser = async () => {
     toast.warning('Email and name are required')
     return
   }
-  
 
   const check = await checkAction('create_user', 'users')
   if (!check.allowed) {
     toast.error('You do not have permission to create users')
     return
   }
-  
+
   if (isCreatingUser.value) return
-  
+
   try {
     isCreatingUser.value = true
     const result = await createUser(newUser)
     showCreateModal.value = false
-    
- 
+
     if (result.password) {
       generatedPassword.value = result.password
       showPasswordModal.value = true
@@ -141,12 +139,12 @@ const handleCreateUser = async () => {
     } else {
       toast.success('User created. Credentials sent via email.')
     }
+
     if (result.apiKey) {
       generatedApiKey.value = result.apiKey
       showApiKeyModal.value = true
     }
-    
- 
+
     Object.assign(newUser, {
       email: '',
       name: '',
@@ -156,6 +154,8 @@ const handleCreateUser = async () => {
       createApiKey: true,
       roleId: undefined
     })
+
+    await fetchUsers()
   } catch (error: any) {
     toast.error(`Failed to create user: ${getUserMessage(error)}`)
   } finally {
@@ -202,6 +202,12 @@ const handleDeleteUser = async () => {
     showDeleteModal.value = false
     userToDelete.value = null
     toast.success('User deleted')
+    await fetchUsers()
+    const total = totalUsers.value
+    const maxIndex = (currentPage.value - 1) * itemsPerPage.value
+    if (currentPage.value > 1 && maxIndex >= total) {
+      currentPage.value = currentPage.value - 1
+    }
   } catch (error: any) {
     toast.error(`Failed to delete user: ${getUserMessage(error)}`)
   } finally {
