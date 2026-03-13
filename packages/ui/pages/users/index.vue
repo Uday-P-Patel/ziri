@@ -25,7 +25,7 @@ const showCreateModal = ref(false)
 const showCredentialsModal = ref(false)
 const showDeleteModal = ref(false)
 const showResetPasswordModal = ref(false)
-const generatedPassword = ref('')
+const generatedPassword = ref<string | undefined>(undefined)
 const generatedApiKey = ref('')
 const selectedUser = ref<User | null>(null)
 const userToDelete = ref<User | null>(null)
@@ -131,7 +131,7 @@ const handleCreateUser = async () => {
     isCreatingUser.value = true
     const result = await createUser(newUser)
     showCreateModal.value = false
-    generatedPassword.value = ''
+    generatedPassword.value = undefined
     generatedApiKey.value = ''
 
     if (result.password) {
@@ -219,7 +219,7 @@ const handleResetPassword = async () => {
     const result = await resetPassword(userToResetPassword.value.userId)
     selectedUser.value = userToResetPassword.value
     showResetPasswordModal.value = false
-    generatedPassword.value = ''
+    generatedPassword.value = undefined
     generatedApiKey.value = ''
 
     if (result.password) {
@@ -244,6 +244,7 @@ const handleResetPassword = async () => {
 }
 
 const copyPassword = () => {
+  if (!generatedPassword.value) return
   navigator.clipboard.writeText(generatedPassword.value)
   toast.success('Password copied to clipboard')
 }
@@ -559,7 +560,7 @@ const copyApiKey = () => {
           <UiButton
             @click="
               showCredentialsModal = false;
-              generatedPassword = '';
+              generatedPassword = undefined;
               generatedApiKey = '';
             "
           >
