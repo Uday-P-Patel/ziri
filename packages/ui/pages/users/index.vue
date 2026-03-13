@@ -22,8 +22,7 @@ const canResetPassword = ref(false)
 
  
 const showCreateModal = ref(false)
-const showPasswordModal = ref(false)
-const showApiKeyModal = ref(false)
+const showCredentialsModal = ref(false)
 const showDeleteModal = ref(false)
 const showResetPasswordModal = ref(false)
 const generatedPassword = ref('')
@@ -144,10 +143,11 @@ const handleCreateUser = async () => {
     isCreatingUser.value = true
     const result = await createUser(newUser)
     showCreateModal.value = false
+    generatedPassword.value = ''
+    generatedApiKey.value = ''
 
     if (result.password) {
       generatedPassword.value = result.password
-      showPasswordModal.value = true
       toast.warning('Email was not sent. Please save the password below.')
     } else {
       toast.success('User created. Credentials sent via email.')
@@ -155,7 +155,10 @@ const handleCreateUser = async () => {
 
     if (result.apiKey) {
       generatedApiKey.value = result.apiKey
-      showApiKeyModal.value = true
+    }
+
+    if (result.password || result.apiKey) {
+      showCredentialsModal.value = true
     }
 
     Object.assign(newUser, {
@@ -273,16 +276,20 @@ const handleResetPassword = async () => {
     const result = await resetPassword(userToResetPassword.value.userId)
     selectedUser.value = userToResetPassword.value
     showResetPasswordModal.value = false
-    
- 
+    generatedPassword.value = ''
+    generatedApiKey.value = ''
+
     if (result.password) {
       generatedPassword.value = result.password
-      showPasswordModal.value = true
       toast.warning('Email was not sent. Please save the password below.')
     } else if (result.emailSent) {
       toast.success('Password reset. New password sent via email.')
     } else {
       toast.success('Password reset.')
+    }
+
+    if (result.password) {
+      showCredentialsModal.value = true
     }
     
     userToResetPassword.value = null
@@ -301,11 +308,6 @@ const copyPassword = () => {
 const copyApiKey = () => {
   navigator.clipboard.writeText(generatedApiKey.value)
   toast.success('API key copied to clipboard')
-}
-
-const closeApiKeyModal = () => {
-  showApiKeyModal.value = false
-  generatedApiKey.value = ''
 }
 </script>
 
@@ -579,76 +581,21 @@ const closeApiKeyModal = () => {
       </form>
     </UiModal>
 
-    <!-- Edit User Modal -->
-    <UiModal v-model="showEditModal" title="Edit User">
-      <form
-        v-if="userToEdit"
-        @submit.prevent="handleUpdateUser"
-        class="flex flex-col gap-4 max-h-[min(80vh,480px)]"
-      >
-        <div class="flex-1 overflow-y-auto space-y-4 pr-1">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1">
-              <p class="text-xs font-semibold text-[rgb(var(--text-secondary))]">Email</p>
-              <p class="text-sm text-[rgb(var(--text))] break-all">{{ userToEdit.email }}</p>
-            </div>
-            <div class="space-y-1">
-              <p class="text-xs font-semibold text-[rgb(var(--text-secondary))]">User ID</p>
-              <code class="text-xs font-mono break-all">{{ userToEdit.userId }}</code>
-            </div>
-          </div>
-          <div class="space-y-1">
-            <p class="text-xs font-semibold text-[rgb(var(--text-secondary))]">Agent</p>
-            <span
-              v-if="userToEdit.isAgent"
-              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
-            >
-              Agent
-            </span>
-            <span
-              v-else
-              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-            >
-              Standard user
-            </span>
-          </div>
-          <UiInput v-model="editUser.name" label="Name" required />
-          <UiInput v-model="editUser.tenant" label="Tenant" />
-          <div>
-            <label class="block text-sm font-medium text-[rgb(var(--text))] mb-1">Role</label>
-            <select
-              v-model="editUser.roleId"
-              class="w-full px-3 py-2 rounded-lg border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              :disabled="userToEdit.userId === 'ziri'"
-            >
-              <option :value="undefined">None</option>
-              <option v-for="r in rolesList" :key="r.id" :value="r.id">{{ r.id }}</option>
-            </select>
-          </div>
-        </div>
-        <div class="flex justify-end gap-3 pt-2">
-          <UiButton type="button" variant="ghost" @click="showEditModal = false; userToEdit = null">
-            Cancel
-          </UiButton>
-          <UiButton type="submit" :loading="isUpdatingUser">
-            Save changes
-          </UiButton>
-        </div>
-      </form>
-    </UiModal>
-
-    <!-- Password Modal -->
-    <UiModal v-model="showPasswordModal" title="Generated Password">
+    <!-- Credentials Modal (Password + API Key) -->
+    <UiModal v-model="showCredentialsModal" title="Generated Credentials">
       <div class="space-y-4">
-        <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+        <div
+          v-if="generatedPassword"
+          class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+        >
           <p class="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
             {{ selectedUser ? 'Password Reset' : 'User Created' }}
           </p>
           <p class="text-xs text-yellow-800 dark:text-yellow-200 mb-3">
-            ⚠️ Save this password now - it won't be shown again!
+            Save this password now - it will not be shown again.
           </p>
           <div class="flex items-center gap-2">
-            <code class="flex-1 text-sm font-mono bg-white dark:bg-gray-800 p-2 rounded">
+            <code class="flex-1 text-sm font-mono bg-white dark:bg-gray-800 p-2 rounded break-all">
               {{ generatedPassword }}
             </code>
             <UiButton size="sm" @click="copyPassword">
@@ -656,23 +603,16 @@ const closeApiKeyModal = () => {
             </UiButton>
           </div>
         </div>
-        <div class="flex justify-end">
-          <UiButton @click="showPasswordModal = false">
-            Close
-          </UiButton>
-        </div>
-      </div>
-    </UiModal>
 
-    <!-- API Key Modal (shown once when user created with createApiKey) -->
-    <UiModal v-model="showApiKeyModal" title="API Key Created">
-      <div class="space-y-4">
-        <div class="p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg">
+        <div
+          v-if="generatedApiKey"
+          class="p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg"
+        >
           <p class="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">
             API key created successfully
           </p>
           <p class="text-xs text-green-800 dark:text-green-200 mb-3">
-            Save this API key now - it won't be shown again!
+            Save this API key now - it will not be shown again.
           </p>
           <div class="flex items-center gap-2">
             <code class="flex-1 text-sm font-mono bg-white dark:bg-gray-800 p-2 rounded break-all">
@@ -683,9 +623,16 @@ const closeApiKeyModal = () => {
             </UiButton>
           </div>
         </div>
+
         <div class="flex justify-end">
-          <UiButton @click="closeApiKeyModal">
-            Done
+          <UiButton
+            @click="
+              showCredentialsModal = false;
+              generatedPassword = '';
+              generatedApiKey = '';
+            "
+          >
+            Close
           </UiButton>
         </div>
       </div>
