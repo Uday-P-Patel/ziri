@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatDateShort, formatCurrency } from '~/utils/formatters'
-import { useUnifiedAuth } from '~/composables/useUnifiedAuth'
+import { useAdminAuth } from '~/composables/useAdminAuth'
 import { useRealtimeUpdates } from '~/composables/useRealtimeUpdates'
 import { useDebounce } from '~/composables/useDebounce'
 
@@ -8,7 +8,7 @@ definePageMeta({
   layout: 'default'
 })
 
-const { getAuthHeader } = useUnifiedAuth()
+const { getAuthHeader } = useAdminAuth()
 
 const searchQuery = ref('')
 const filterDecision = ref<'' | 'permit' | 'forbid'>('')
@@ -125,10 +125,27 @@ const { isConnected, error: sseError } = useRealtimeUpdates({
     const matchesProvider = !filterProvider.value || event.data.provider === filterProvider.value
     const matchesModel = !filterModel.value || event.data.model === filterModel.value
     
-    if (matchesDateRange && matchesDecision && matchesProvider && matchesModel) {
-      if (currentPage.value === 1) {
-        fetchLogs()
-      }
+    if (matchesDateRange && matchesDecision && matchesProvider && matchesModel && currentPage.value === 1) {
+      fetchLogs()
+    }
+  },
+  onCostTracked: (event) => {
+    const dateRangeParams = getDateRange()
+    const eventDate = event.data.timestamp ? new Date(event.data.timestamp) : new Date()
+
+    let matchesDateRange = true
+    if (dateRangeParams.startDate) {
+      matchesDateRange = eventDate >= new Date(dateRangeParams.startDate)
+    }
+    if (dateRangeParams.endDate && matchesDateRange) {
+      matchesDateRange = eventDate <= new Date(dateRangeParams.endDate)
+    }
+
+    const matchesProvider = !filterProvider.value || event.data.provider === filterProvider.value
+    const matchesModel = !filterModel.value || event.data.model === filterModel.value
+
+    if (matchesDateRange && matchesProvider && matchesModel && currentPage.value === 1) {
+      fetchLogs()
     }
   },
   onBatchUpdate: (event) => {
@@ -149,7 +166,7 @@ const uniqueModels = computed(() => {
 const getStatusBadgeClass = (decision: string) => {
   switch (decision) {
     case 'permit':
-      return 'badge-success'
+      return 'badge-info'
     case 'forbid':
       return 'badge-danger'
     default:
@@ -181,8 +198,25 @@ const columns = [
   { key: 'spend', header: 'Cost', class: '', sortable: true }
 ]
 
+let devPollId: number | null = null
+
 onMounted(() => {
   fetchLogs()
+
+  if (import.meta.dev) {
+    devPollId = window.setInterval(() => {
+      if (currentPage.value === 1) {
+        fetchLogs()
+      }
+    }, 3000)
+  }
+})
+
+onUnmounted(() => {
+  if (devPollId !== null) {
+    clearInterval(devPollId)
+    devPollId = null
+  }
 })
 </script>
 
@@ -286,7 +320,7 @@ onMounted(() => {
       </template>
 
       <template #decision="{ row }">
-        <span :class="[getStatusBadgeClass(row.decision), 'badge']">
+        <span :class="[getStatusBadgeClass(row.decision), 'table-pill']">
           {{ row.decision === 'permit' ? 'Permit' : 'Forbid' }}
         </span>
       </template>
@@ -297,7 +331,7 @@ onMounted(() => {
             <span
               v-for="policy in getPoliciesArray(row.policies_evaluated)"
               :key="policy"
-              class="badge badge-neutral text-xs"
+              class="table-pill badge-neutral"
             >
               {{ policy }}
             </span>

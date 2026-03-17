@@ -63,7 +63,7 @@ const editUser = reactive<{
  
 const searchQuery = ref('')
 const currentPage = ref(1)
-const itemsPerPage = ref(20)
+const itemsPerPage = ref(10)
 const totalUsers = ref(0)
 
  
@@ -462,12 +462,12 @@ const copyApiKey = () => {
         <template #status="{ row }">
           <span
             :class="[
-              'px-2 py-1 rounded text-xs font-semibold',
+              'table-pill',
               row.status === 1 
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                ? 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-200'
                 : row.status === 0
                 ? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                : 'bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-200'
             ]"
           >
             {{ row.status === 1 ? 'Active' : row.status === 0 ? 'Inactive' : 'Revoked' }}
@@ -544,7 +544,7 @@ const copyApiKey = () => {
             <label class="block text-sm font-medium text-[rgb(var(--text))] mb-1">Role</label>
             <select
               v-model="newUser.roleId"
-              class="w-full px-3 py-2 rounded-lg border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="w-full px-3 py-2 rounded-lg border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-lime-400"
             >
               <option :value="undefined">None</option>
               <option v-for="r in rolesList" :key="r.id" :value="r.id">{{ r.id }}</option>
@@ -586,6 +586,63 @@ const copyApiKey = () => {
       </form>
     </UiModal>
 
+    <!-- Edit User Modal -->
+    <UiModal v-model="showEditModal" title="Edit User">
+      <form
+        v-if="userToEdit"
+        @submit.prevent="handleUpdateUser"
+        class="flex flex-col gap-4 max-h-[min(80vh,480px)]"
+      >
+        <div class="flex-1 overflow-y-auto space-y-4 pr-1">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <p class="text-xs font-semibold text-[rgb(var(--text-secondary))]">Email</p>
+              <p class="text-sm text-[rgb(var(--text))] break-all">{{ userToEdit.email }}</p>
+            </div>
+            <div class="space-y-1">
+              <p class="text-xs font-semibold text-[rgb(var(--text-secondary))]">User ID</p>
+              <code class="text-xs font-mono break-all">{{ userToEdit.userId }}</code>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <p class="text-xs font-semibold text-[rgb(var(--text-secondary))]">Agent</p>
+            <span
+              v-if="userToEdit.isAgent"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+            >
+              Agent
+            </span>
+            <span
+              v-else
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            >
+              Standard user
+            </span>
+          </div>
+          <UiInput v-model="editUser.name" label="Name" required />
+          <UiInput v-model="editUser.tenant" label="Tenant" />
+          <div>
+            <label class="block text-sm font-medium text-[rgb(var(--text))] mb-1">Role</label>
+            <select
+              v-model="editUser.roleId"
+              class="w-full px-3 py-2 rounded-lg border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              :disabled="userToEdit.userId === 'ziri'"
+            >
+              <option :value="undefined">None</option>
+              <option v-for="r in rolesList" :key="r.id" :value="r.id">{{ r.id }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <UiButton type="button" variant="ghost" @click="showEditModal = false; userToEdit = null">
+            Cancel
+          </UiButton>
+          <UiButton type="submit" :loading="isUpdatingUser">
+            Save changes
+          </UiButton>
+        </div>
+      </form>
+    </UiModal>    
     <!-- Credentials Modal (Password + API Key) -->
     <UiModal v-model="showCredentialsModal" title="Generated Credentials">
       <div class="space-y-4">
@@ -701,7 +758,7 @@ const copyApiKey = () => {
           <UiButton type="button" variant="outline" @click="showResetPasswordModal = false; userToResetPassword = null">
             Cancel
           </UiButton>
-          <UiButton type="button" @click="handleResetPassword" :loading="isResettingPassword" class="bg-amber-500 hover:bg-amber-600 text-white">
+          <UiButton type="button" @click="handleResetPassword" :loading="isResettingPassword">
             Reset Password
           </UiButton>
         </div>

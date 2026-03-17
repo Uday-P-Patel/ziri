@@ -26,7 +26,7 @@ const isDeleting = ref(false)
 
 const searchQuery = ref('')
 const currentPage = ref(1)
-const itemsPerPage = ref(20)
+const itemsPerPage = ref(10)
 const totalRoles = ref(0)
 const sortBy = ref<string | null>(null)
 const sortOrder = ref<'asc' | 'desc' | null>(null)
@@ -253,7 +253,7 @@ onMounted(async () => {
             v-model="newRoleId"
             type="text"
             placeholder="e.g. editor, viewer"
-            class="w-full px-3 py-2 rounded-lg border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            class="w-full px-3 py-2 rounded-lg border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-lime-400"
             autocomplete="off"
           />
           <p class="text-xs text-[rgb(var(--text-muted))] mt-1">

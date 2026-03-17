@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useKeys } from '~/composables/useKeys'
+import { useKeysStore } from '~/stores/keys'
 import { useUsers } from '~/composables/useUsers'
 import { useConfigStore } from '~/stores/config'
 import { useToast } from '~/composables/useToast'
@@ -14,6 +15,7 @@ import type { ValidationError } from '~/composables/useCedarWasm'
 
 const router = useRouter()
 const configStore = useConfigStore()
+const keysStore = useKeysStore()
 const { listKeys, getKey, getKeyByUserId, createKey, updateKey, rotateKey, deleteKey, deleteKeyById, keys, loading } = useKeys()
 const { users } = useUsers()
 const { getAuthHeader } = useAdminAuth()
@@ -116,7 +118,7 @@ const filterStatus = ref<'' | 'active' | 'disabled'>('')
 
  
 const currentPage = ref(1)
-const itemsPerPage = ref(20)
+const itemsPerPage = ref(10)
 const totalKeys = ref(0)
 
  
@@ -153,18 +155,37 @@ const usersWithoutKey = computed(() => {
 const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
  
+const resolveKeyName = (key: Key): string => {
+  const user = users.value.find(u => u.userId === key.userId)
+  return user?.name || key.name || ''
+}
+
 const fetchKeys = async () => {
   try {
     const result = await listKeys({
       search: debouncedSearchQuery.value || undefined,
       limit: itemsPerPage.value,
       offset: (currentPage.value - 1) * itemsPerPage.value,
-      sortBy: sortBy.value,
-      sortOrder: sortOrder.value
+      sortBy: sortBy.value === 'name' ? null : sortBy.value,
+      sortOrder: sortBy.value === 'name' ? null : sortOrder.value
     })
     totalKeys.value = result.total || 0
+
+    // If sorting by name, sort locally using resolved user names
+    if (sortBy.value === 'name' && sortOrder.value) {
+      const order = sortOrder.value
+      keysStore.keys = [...keysStore.keys].sort((a, b) => {
+        const aName = resolveKeyName(a).toLowerCase()
+        const bName = resolveKeyName(b).toLowerCase()
+        if (aName === '' && bName === '') return 0
+        if (aName === '') return 1
+        if (bName === '') return -1
+        const cmp = aName.localeCompare(bName)
+        return order === 'asc' ? cmp : -cmp
+      })
+    }
   } catch (e) {
- 
+
   }
 }
 
@@ -638,7 +659,7 @@ const closeKeyModal = () => {
         </UiButton>
       </template>
       <template #userId="{ value }">
-        <code class="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 font-mono text-xs text-indigo-600 dark:text-indigo-400 font-semibold">{{ value }}</code>
+        <code class="px-2 py-0.5 rounded-md bg-lime-50 dark:bg-lime-900/30 font-mono text-xs text-lime-700 dark:text-lime-200 font-semibold">{{ value }}</code>
       </template>
       
       <template #name="{ row }">
@@ -662,11 +683,11 @@ const closeKeyModal = () => {
       <template #status="{ value }">
         <span 
           :class="[
-            'px-2 py-1 rounded text-xs font-semibold',
+            'table-pill',
             value === 'active' || value === 1 
-              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+              ? 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-200'
               : value === 'disabled'
-              ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+              ? 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'
               : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
           ]"
         >
@@ -680,7 +701,7 @@ const closeKeyModal = () => {
             v-if="canUpdateKeyStatus"
             size="sm" 
             variant="ghost"
-            class="text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+            class="text-lime-600 hover:text-lime-700 hover:bg-lime-50 dark:hover:bg-lime-900/20"
             @click.stop="handleEditKey(row)"
             :loading="isEditing"
             title="Edit Key"
