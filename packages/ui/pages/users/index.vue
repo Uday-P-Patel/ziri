@@ -22,13 +22,13 @@ const canResetPassword = ref(false)
 
  
 const showCreateModal = ref(false)
-const showPasswordModal = ref(false)
-const showApiKeyModal = ref(false)
+const showCredentialsModal = ref(false)
 const showDeleteModal = ref(false)
 const showResetPasswordModal = ref(false)
 const generatedPassword = ref('')
 const generatedApiKey = ref('')
 const selectedUser = ref<User | null>(null)
+const userToEdit = ref<User | null>(null)
 const userToDelete = ref<User | null>(null)
 const userToResetPassword = ref<User | null>(null)
 
@@ -36,6 +36,8 @@ const userToResetPassword = ref<User | null>(null)
 const isCreatingUser = ref(false)
 const isResettingPassword = ref(false)
 const isDeletingUser = ref(false)
+const isUpdatingUser = ref(false)
+const showEditModal = ref(false)
 
  
 const newUser = reactive<CreateUserInput>({
@@ -48,10 +50,20 @@ const newUser = reactive<CreateUserInput>({
   roleId: undefined
 })
 
+const editUser = reactive<{
+  name: string
+  tenant: string
+  roleId?: string
+}>({
+  name: '',
+  tenant: '',
+  roleId: undefined
+})
+
  
 const searchQuery = ref('')
 const currentPage = ref(1)
-const itemsPerPage = ref(20)
+const itemsPerPage = ref(10)
 const totalUsers = ref(0)
 
  
@@ -118,35 +130,37 @@ const handleCreateUser = async () => {
     toast.warning('Email and name are required')
     return
   }
-  
 
   const check = await checkAction('create_user', 'users')
   if (!check.allowed) {
     toast.error('You do not have permission to create users')
     return
   }
-  
+
   if (isCreatingUser.value) return
-  
+
   try {
     isCreatingUser.value = true
     const result = await createUser(newUser)
     showCreateModal.value = false
-    
- 
+    generatedPassword.value = ''
+    generatedApiKey.value = ''
+
     if (result.password) {
       generatedPassword.value = result.password
-      showPasswordModal.value = true
       toast.warning('Email was not sent. Please save the password below.')
     } else {
       toast.success('User created. Credentials sent via email.')
     }
+
     if (result.apiKey) {
       generatedApiKey.value = result.apiKey
-      showApiKeyModal.value = true
     }
-    
- 
+
+    if (result.password || result.apiKey) {
+      showCredentialsModal.value = true
+    }
+
     Object.assign(newUser, {
       email: '',
       name: '',
@@ -156,10 +170,49 @@ const handleCreateUser = async () => {
       createApiKey: true,
       roleId: undefined
     })
+
+    await fetchUsers()
   } catch (error: any) {
     toast.error(`Failed to create user: ${getUserMessage(error)}`)
   } finally {
     isCreatingUser.value = false
+  }
+}
+
+const openEditModal = (user: User) => {
+  if (!canUpdateUser.value) return
+  userToEdit.value = user
+  editUser.name = user.name
+  editUser.tenant = user.tenant || ''
+  editUser.roleId = user.roleId
+  selectedUser.value = user
+  showEditModal.value = true
+}
+
+const handleUpdateUser = async () => {
+  if (!userToEdit.value || isUpdatingUser.value) return
+
+  const check = await checkAction('update_user', 'users')
+  if (!check.allowed) {
+    toast.error('You do not have permission to update users')
+    return
+  }
+
+  try {
+    isUpdatingUser.value = true
+    await updateUser(userToEdit.value.userId, {
+      name: editUser.name.trim(),
+      tenant: editUser.tenant.trim() || undefined,
+      roleId: editUser.roleId || undefined
+    })
+    userToEdit.value = null
+    selectedUser.value = null
+    showEditModal.value = false
+    await fetchUsers()
+  } catch (error: any) {
+    toast.error(`Failed to update user: ${getUserMessage(error)}`)
+  } finally {
+    isUpdatingUser.value = false
   }
 }
 
@@ -202,6 +255,12 @@ const handleDeleteUser = async () => {
     showDeleteModal.value = false
     userToDelete.value = null
     toast.success('User deleted')
+    await fetchUsers()
+    const total = totalUsers.value
+    const maxIndex = (currentPage.value - 1) * itemsPerPage.value
+    if (currentPage.value > 1 && maxIndex >= total) {
+      currentPage.value = currentPage.value - 1
+    }
   } catch (error: any) {
     toast.error(`Failed to delete user: ${getUserMessage(error)}`)
   } finally {
@@ -217,16 +276,20 @@ const handleResetPassword = async () => {
     const result = await resetPassword(userToResetPassword.value.userId)
     selectedUser.value = userToResetPassword.value
     showResetPasswordModal.value = false
-    
- 
+    generatedPassword.value = ''
+    generatedApiKey.value = ''
+
     if (result.password) {
       generatedPassword.value = result.password
-      showPasswordModal.value = true
       toast.warning('Email was not sent. Please save the password below.')
     } else if (result.emailSent) {
       toast.success('Password reset. New password sent via email.')
     } else {
       toast.success('Password reset.')
+    }
+
+    if (result.password) {
+      showCredentialsModal.value = true
     }
     
     userToResetPassword.value = null
@@ -245,11 +308,6 @@ const copyPassword = () => {
 const copyApiKey = () => {
   navigator.clipboard.writeText(generatedApiKey.value)
   toast.success('API key copied to clipboard')
-}
-
-const closeApiKeyModal = () => {
-  showApiKeyModal.value = false
-  generatedApiKey.value = ''
 }
 </script>
 
@@ -399,12 +457,12 @@ const closeApiKeyModal = () => {
         <template #status="{ row }">
           <span
             :class="[
-              'px-2 py-1 rounded text-xs font-semibold',
+              'table-pill',
               row.status === 1 
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                ? 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-200'
                 : row.status === 0
                 ? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                : 'bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-200'
             ]"
           >
             {{ row.status === 1 ? 'Active' : row.status === 0 ? 'Inactive' : 'Revoked' }}
@@ -417,6 +475,18 @@ const closeApiKeyModal = () => {
         </template>
         <template #actions="{ row }">
           <div class="flex gap-2">
+            <UiButton
+              v-if="canUpdateUser"
+              variant="ghost"
+              size="sm"
+              @click="openEditModal(row)"
+              :disabled="row.userId === 'ziri'"
+              title="Edit User"
+            >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            </UiButton>
             <UiButton
               v-if="canResetPassword && row.userId !== 'ziri'"
               variant="ghost"
@@ -469,7 +539,7 @@ const closeApiKeyModal = () => {
             <label class="block text-sm font-medium text-[rgb(var(--text))] mb-1">Role</label>
             <select
               v-model="newUser.roleId"
-              class="w-full px-3 py-2 rounded-lg border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="w-full px-3 py-2 rounded-lg border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-lime-400"
             >
               <option :value="undefined">None</option>
               <option v-for="r in rolesList" :key="r.id" :value="r.id">{{ r.id }}</option>
@@ -479,7 +549,8 @@ const closeApiKeyModal = () => {
             </p>
           </div>
           <UiToggle
-            v-model="newUser.createApiKey"
+            :model-value="!!newUser.createApiKey"
+            @update:model-value="newUser.createApiKey = $event"
             label="Create API Key"
             help-text="Automatically generate an API key for this user. The key will be shown once after creation."
           />
@@ -510,18 +581,78 @@ const closeApiKeyModal = () => {
       </form>
     </UiModal>
 
-    <!-- Password Modal -->
-    <UiModal v-model="showPasswordModal" title="Generated Password">
+    <!-- Edit User Modal -->
+    <UiModal v-model="showEditModal" title="Edit User">
+      <form
+        v-if="userToEdit"
+        @submit.prevent="handleUpdateUser"
+        class="flex flex-col gap-4 max-h-[min(80vh,480px)]"
+      >
+        <div class="flex-1 overflow-y-auto space-y-4 pr-1">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <p class="text-xs font-semibold text-[rgb(var(--text-secondary))]">Email</p>
+              <p class="text-sm text-[rgb(var(--text))] break-all">{{ userToEdit.email }}</p>
+            </div>
+            <div class="space-y-1">
+              <p class="text-xs font-semibold text-[rgb(var(--text-secondary))]">User ID</p>
+              <code class="text-xs font-mono break-all">{{ userToEdit.userId }}</code>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <p class="text-xs font-semibold text-[rgb(var(--text-secondary))]">Agent</p>
+            <span
+              v-if="userToEdit.isAgent"
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+            >
+              Agent
+            </span>
+            <span
+              v-else
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            >
+              Standard user
+            </span>
+          </div>
+          <UiInput v-model="editUser.name" label="Name" required />
+          <UiInput v-model="editUser.tenant" label="Tenant" />
+          <div>
+            <label class="block text-sm font-medium text-[rgb(var(--text))] mb-1">Role</label>
+            <select
+              v-model="editUser.roleId"
+              class="w-full px-3 py-2 rounded-lg border-2 border-[rgb(var(--border))] bg-[rgb(var(--surface))] text-[rgb(var(--text))] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              :disabled="userToEdit.userId === 'ziri'"
+            >
+              <option :value="undefined">None</option>
+              <option v-for="r in rolesList" :key="r.id" :value="r.id">{{ r.id }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <UiButton type="button" variant="ghost" @click="showEditModal = false; userToEdit = null">
+            Cancel
+          </UiButton>
+          <UiButton type="submit" :loading="isUpdatingUser">
+            Save changes
+          </UiButton>
+        </div>
+      </form>
+    </UiModal>    
+    <!-- Credentials Modal (Password + API Key) -->
+    <UiModal v-model="showCredentialsModal" title="Generated Credentials">
       <div class="space-y-4">
-        <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+        <div
+          v-if="generatedPassword"
+          class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+        >
           <p class="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
             {{ selectedUser ? 'Password Reset' : 'User Created' }}
           </p>
           <p class="text-xs text-yellow-800 dark:text-yellow-200 mb-3">
-            ⚠️ Save this password now - it won't be shown again!
+            Save this password now - it will not be shown again.
           </p>
           <div class="flex items-center gap-2">
-            <code class="flex-1 text-sm font-mono bg-white dark:bg-gray-800 p-2 rounded">
+            <code class="flex-1 text-sm font-mono bg-white dark:bg-gray-800 p-2 rounded break-all">
               {{ generatedPassword }}
             </code>
             <UiButton size="sm" @click="copyPassword">
@@ -529,23 +660,16 @@ const closeApiKeyModal = () => {
             </UiButton>
           </div>
         </div>
-        <div class="flex justify-end">
-          <UiButton @click="showPasswordModal = false">
-            Close
-          </UiButton>
-        </div>
-      </div>
-    </UiModal>
 
-    <!-- API Key Modal (shown once when user created with createApiKey) -->
-    <UiModal v-model="showApiKeyModal" title="API Key Created">
-      <div class="space-y-4">
-        <div class="p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg">
+        <div
+          v-if="generatedApiKey"
+          class="p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg"
+        >
           <p class="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">
             API key created successfully
           </p>
           <p class="text-xs text-green-800 dark:text-green-200 mb-3">
-            Save this API key now - it won't be shown again!
+            Save this API key now - it will not be shown again.
           </p>
           <div class="flex items-center gap-2">
             <code class="flex-1 text-sm font-mono bg-white dark:bg-gray-800 p-2 rounded break-all">
@@ -556,9 +680,16 @@ const closeApiKeyModal = () => {
             </UiButton>
           </div>
         </div>
+
         <div class="flex justify-end">
-          <UiButton @click="closeApiKeyModal">
-            Done
+          <UiButton
+            @click="
+              showCredentialsModal = false;
+              generatedPassword = '';
+              generatedApiKey = '';
+            "
+          >
+            Close
           </UiButton>
         </div>
       </div>
@@ -622,7 +753,7 @@ const closeApiKeyModal = () => {
           <UiButton type="button" variant="outline" @click="showResetPasswordModal = false; userToResetPassword = null">
             Cancel
           </UiButton>
-          <UiButton type="button" @click="handleResetPassword" :loading="isResettingPassword" class="bg-amber-500 hover:bg-amber-600 text-white">
+          <UiButton type="button" @click="handleResetPassword" :loading="isResettingPassword">
             Reset Password
           </UiButton>
         </div>
