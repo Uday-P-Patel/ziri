@@ -28,20 +28,6 @@ export class RateLimiterService {
     const cacheKey = `${keyType}:${limit}`
 
     if (!this.limiters.has(cacheKey)) {
-      // make sure the table exists before we hand it off to the limiter
-      try {
-        const exists = this.db.prepare(
-          `SELECT 1 FROM sqlite_master WHERE type='table' AND name='rate_limit_buckets'`
-        ).get()
-        if (!exists) {
-          const { up } = await import('../db/migrations/004_rate_limiting.js')
-          up(this.db)
-        }
-      } catch {
-        const { up } = await import('../db/migrations/004_rate_limiting.js')
-        up(this.db)
-      }
-
       this.limiters.set(cacheKey, new RateLimiterSQLite({
         storeClient: this.db,
         storeType: 'better-sqlite3',
